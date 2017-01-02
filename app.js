@@ -6,7 +6,6 @@ var io = require('socket.io')(server);
 var path = require('path');
 var routes = require('./routes/index');
 var users = require('./routes/users');
-//var socketchat = require('./routes/socketchat');
 //Socket Variables
 var mongoose = require('mongoose');
 var UrlUtility = require('./Utility/UrlUtility');
@@ -187,7 +186,7 @@ io.sockets.on('connection', function (socket) {
                     setTimeout(function () {
                         io.sockets["in"](socket.room).emit('typingstart', 'April App');
                     }, delay);
-                    Phrases.find({phraseText: {$regex : ".*"+ data.messageText +".*"}}, function (err, phrases) {
+                    Phrases.find({ phraseText: { $regex: ".*" + data.messageText + ".*" } }, function (err, phrases) {
                         if (err) {
                             var res;
                             res.send(err);
@@ -218,8 +217,19 @@ io.sockets.on('connection', function (socket) {
                                                     setTimeout(function () {
                                                         io.sockets["in"](socket.room).emit('typingend', 'April App');
                                                         var randomNumber = Math.floor(Math.random() * responseMessages.length);
-                                                        //io.sockets["in"](socket.room).emit('updatechat', 'April App', responseMessages[randomNumber].data.text);
-                                                        io.sockets["in"](socket.room).emit('updatechat', 'April App', responseMessages);
+                                                        var obj = {
+                                                            'type': '',
+                                                            'data': Object
+                                                        }
+                                                        for (var i = 0; i < responseMessages.length; i++) {
+                                                            obj = {
+                                                                'type': '',
+                                                                'data': Object
+                                                            }
+                                                            obj.type = responseMessages[i].type;
+                                                            obj.data = responseMessages[i].data;
+                                                            io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
+                                                        }
                                                     }, delay2);
 
                                                 }
@@ -317,8 +327,19 @@ io.sockets.on('connection', function (socket) {
                                         setTimeout(function () {
                                             io.sockets["in"](socket.room).emit('typingend', 'April App');
                                             var randomNumber = Math.floor(Math.random() * responseMessages.length);
-                                            //io.sockets["in"](socket.room).emit('updatechat', 'April App', responseMessages[randomNumber].data.text);
-                                            io.sockets["in"](socket.room).emit('updatechat', 'April App', responseMessages);
+                                            var obj = {
+                                                'type': '',
+                                                'data': Object
+                                            }
+                                            for (var i = 0; i < responseMessages.length; i++) {
+                                                obj = {
+                                                    'type': '',
+                                                    'data': Object
+                                                }
+                                                obj.type = responseMessages[i].type;
+                                                obj.data = responseMessages[i].data;
+                                                io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
+                                            }
                                         }, delay2);
 
                                     }
