@@ -27,6 +27,7 @@ var bodyParser = require('body-parser');
 var responsemessages = require('./routes/responsemessages');
 var multer = require('multer');
 server.listen(process.env.PORT);
+//server.listen(80);
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', function (req, res) {
     res.sendfile(__dirname + '/index.html');
@@ -213,21 +214,24 @@ io.sockets.on('connection', function (socket) {
 
                                                 }
                                                 else {
-                                                    console.log(responseMessages);
                                                     setTimeout(function () {
                                                         io.sockets["in"](socket.room).emit('typingend', 'April App');
                                                         var randomNumber = Math.floor(Math.random() * responseMessages.length);
                                                         var obj = {
+                                                            'id':'',
                                                             'type': '',
                                                             'data': Object
                                                         }
                                                         for (var i = 0; i < responseMessages.length; i++) {
                                                             obj = {
+                                                                'id':'',
                                                                 'type': '',
                                                                 'data': Object
                                                             }
+                                                            obj.id = responseMessages[i]._id;
                                                             obj.type = responseMessages[i].type;
                                                             obj.data = responseMessages[i].data;
+                                                            console.log(obj);
                                                             io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
                                                         }
                                                     }, delay2);
@@ -323,19 +327,21 @@ io.sockets.on('connection', function (socket) {
 
                                     }
                                     else {
-                                        console.log(responseMessages);
                                         setTimeout(function () {
                                             io.sockets["in"](socket.room).emit('typingend', 'April App');
                                             var randomNumber = Math.floor(Math.random() * responseMessages.length);
                                             var obj = {
+                                                'id':'',
                                                 'type': '',
                                                 'data': Object
                                             }
                                             for (var i = 0; i < responseMessages.length; i++) {
                                                 obj = {
+                                                    'id':'',
                                                     'type': '',
                                                     'data': Object
                                                 }
+                                                obj.id = responseMessages[i]._id;
                                                 obj.type = responseMessages[i].type;
                                                 obj.data = responseMessages[i].data;
                                                 io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
