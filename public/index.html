@@ -1,0 +1,107 @@
+<head>
+... // your other code
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+<script>
+var socket = io().connect('http://aprilappserver.azurewebsites.net');
+
+var roomId = "";
+var roomName = "";
+var UserId = "";
+
+socket.on('connect', function(){
+    socket.emit('create', '58642fbdb6500851ac4fa5fc');
+    socket.emit('adduser', {'id':'58642fbdb6500851ac4fa5fc', 'name':'ALI Sajjad Rizvi','_roomId':'58642fbdb6500851ac4fa5fc', 'roomName':'58642fbdb6500851ac4fa5fc'});
+});
+
+socket.on('updatechat', function (username, data) {
+    console.log(data);
+    $('#conversation').append('<b>'+ username + ':</b> ' + data + '<br>');
+});
+
+
+socket.on('updaterooms', function (rooms, current_room) {
+    console.log(rooms);
+    console.log(current_room);
+    $('#rooms').empty();
+    $.each(rooms, function(key, value) {
+        if(value == current_room){
+            roomId = value._id;
+            roomName = value;
+            $('#rooms').append('<div>' + value + '</div>');
+        }
+        else {
+            $('#rooms').append('<div><a href="#" onclick="switchRoom(\''+value+'\')">' + value + '</a></div>');
+        }
+    });
+});
+
+socket.on('typingstart', function (name) {
+    console.log(name + " is typing");
+});
+
+socket.on('typingend', function (name) {
+    console.log(name + " is not typing");
+});
+
+function switchRoom(room){
+    socket.emit('switchRoom', room);
+}
+
+var conversationId = 0;
+
+socket.on('conversationId', function (Id) {
+    conversationId = Id;
+    console.log(Id);
+});
+
+
+$(function(){
+    $('#datasend').click( function() {
+        var message = $('#data').val();
+        $('#data').val('');
+        $('#conversation').append('<b> Ali :</b> ' + message + '<br>');
+        var data = {'messageType':'text', 'messageText':message, 'messageData':'', '_conversationId':conversationId, '_messageFromUserId':'58642fbdb6500851ac4fa5fc'};
+        socket.emit('sendchat', data);
+        /*var message = $('#data').val();
+        
+        $('#conversation').append('<b> Ali :</b> ' + message + '<br>');
+        $('#data').val('');
+        socket.emit('sendchat', message);*/
+    });
+
+    $('#data').keypress(function(e) {
+        if(e.which == 13) {
+            $(this).blur();
+            $('#datasend').focus().click();
+        }
+    });
+
+    $('#roombutton').click(function(){
+        var name = $('#roomname').val();
+        $('#roomname').val('');
+        socket.emit('create', name)
+    });
+});
+
+</script>
+</head>
+<body>
+    <div style="float:left;width:15%;border-right:1px solid black;height:300px;padding:10px;overflow:scroll-y;">
+        <b>ROOMS</b>
+        <div id="rooms"></div>
+    </div>
+
+    <div style="float:left;width:300px;height:250px;overflow:scroll-y;padding:10px;">
+        <div id="conversation"></div>
+        <input id="data" style="width:200px;" />
+        <input type="button" id="datasend" value="send" />
+    </div>
+
+   <div style="float:left;width:300px;height:250px;overflow:scroll-y;padding:10px;">
+       <div id="room creation"></div>
+       <input id="roomname" style="width:200px;" />
+        <input type="button" id="roombutton" value="create room" />
+   </div>
+   ... // the rest of your page
+</body>
