@@ -26,7 +26,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var responsemessages = require('./routes/responsemessages');
 var multer = require('multer');
-server.listen(80);
+server.listen(process.env.PORT);
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', function (req, res) {
     res.sendfile(__dirname + '/index.html');
