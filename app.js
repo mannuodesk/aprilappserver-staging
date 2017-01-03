@@ -216,22 +216,31 @@ io.sockets.on('connection', function (socket) {
                                                 else {
                                                     setTimeout(function () {
                                                         io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                                        var randomNumber = Math.floor(Math.random() * responseMessages.length);
                                                         var obj = {
-                                                            'id':'',
+                                                            'id': '',
                                                             'type': '',
                                                             'data': Object
                                                         }
                                                         for (var i = 0; i < responseMessages.length; i++) {
                                                             obj = {
-                                                                'id':'',
+                                                                'id': '',
                                                                 'type': '',
                                                                 'data': Object
                                                             }
                                                             obj.id = responseMessages[i]._id;
                                                             obj.type = responseMessages[i].type;
-                                                            obj.data = responseMessages[i].data;
-                                                            console.log(obj);
+                                                            if (responseMessages[i].type == 'text') {
+                                                                var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                                                                textType = {
+                                                                    'cardAddButton': responseMessages[i].data.cardAddButton,
+                                                                    'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                                                    'text': responseMessages[i].data.randomText[randomNumber].text
+                                                                }
+                                                                obj.data = textType;
+                                                            }
+                                                            else {
+                                                                obj.data = responseMessages[i].data;
+                                                            }
                                                             io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
                                                         }
                                                     }, delay2);
@@ -331,19 +340,34 @@ io.sockets.on('connection', function (socket) {
                                             io.sockets["in"](socket.room).emit('typingend', 'April App');
                                             var randomNumber = Math.floor(Math.random() * responseMessages.length);
                                             var obj = {
-                                                'id':'',
+                                                'id': '',
                                                 'type': '',
                                                 'data': Object
                                             }
+                                            var textType = {
+                                                'cardAddButton': [],
+                                                'quickReplyButton': [],
+                                                'text': String
+                                            }
                                             for (var i = 0; i < responseMessages.length; i++) {
                                                 obj = {
-                                                    'id':'',
+                                                    'id': '',
                                                     'type': '',
                                                     'data': Object
                                                 }
                                                 obj.id = responseMessages[i]._id;
                                                 obj.type = responseMessages[i].type;
-                                                obj.data = responseMessages[i].data;
+                                                if (responseMessages[i].type == 'text') {
+                                                    textType = {
+                                                        'cardAddButton': responseMessages[i].data.cardAddButton,
+                                                        'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                                        'text': responseMessages[i].data.randomText[randomNumber]
+                                                    }
+                                                    obj.data = textType;
+                                                }
+                                                else {
+                                                    obj.data = responseMessages[i].data;
+                                                }
                                                 io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
                                             }
                                         }, delay2);
