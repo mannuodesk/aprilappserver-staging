@@ -15,9 +15,11 @@ var ConversationMessages = require('./models/ConversationMessages');
 var PhraseGroup = require('./models/PhraseGroup');
 var Phrases = require('./models/Phrases');
 var ResponseMessage = require('./models/ResponseMessages');
+
 //
 var groups = require('./routes/groups');
 var blocks = require('./routes/blocks');
+var auto = require('./routes/auto');
 var phrases = require('./routes/phrases');
 var phrasegroup = require('./routes/phrasegroup');
 var usercode = require('./routes/usercode');
@@ -26,8 +28,8 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var responsemessages = require('./routes/responsemessages');
 var multer = require('multer');
-server.listen(process.env.PORT);
-//server.listen(80);
+//server.listen(process.env.PORT);
+server.listen(80);
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', function (req, res) {
     res.sendfile(__dirname + '/index.html');
@@ -67,6 +69,7 @@ app.use('/usercode', usercode);
 app.use('/responsemessage', responsemessages);
 app.use('/phrasegroup', phrasegroup);
 app.use('/messages', messages);
+app.use('/auto', auto);
 
 
 
@@ -415,7 +418,9 @@ io.sockets.on('connection', function (socket) {
         socket.broadcast.to(newroom).emit('updatechat', 'SERVER', socket.username + ' has joined this room');
         socket.emit('updaterooms', rooms, newroom);
     });
-
+    socket.on('mnb', function(){
+        console.log("Pong received from client");
+    });
     socket.on('disconnect', function () {
         delete usernames[socket.username];
         io.sockets.emit('updateusers', usernames);
@@ -423,3 +428,9 @@ io.sockets.on('connection', function (socket) {
         socket.leave(socket.room);
     });
 });
+function sendHeartbeat(){
+    io.sockets.emit('ping', { beat : 1 });
+    setTimeout(sendHeartbeat, 2000);
+}
+
+setTimeout(sendHeartbeat, 2000);

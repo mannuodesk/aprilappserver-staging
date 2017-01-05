@@ -68,7 +68,7 @@ getAllPhrasesRoute.get(function (req, res) {
         'phrases':[],
         'block':Block
     };       
-    PhraseGroup.find({}, null, { sort: { 'order': -1 } }, function (err, PhraseGroups) {
+    PhraseGroup.find({}, null, { sort: { '_id': -1 } }, function (err, PhraseGroups) {
         if (err)
         {
             res.send(err);

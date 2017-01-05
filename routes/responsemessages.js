@@ -190,20 +190,65 @@ deleteAddButtonRoute.get(function (req, res) {
     var addButtonId = req.params.addButtonId;
     var type = req.params.type;
     var response = new Response();
+    var resmesId = responseMessageId.slice(1);
     if (type == 'gallery') {
-        ResponseMessage.update(
-            { "data.indexId": responseMessageId },
-            { "$pull": { 'data.$.cardAddButton': { _addButtonId: addButtonId } } },
-            function (err, numAffected) {
+        ResponseMessage.findOne({ _id: resmesId }
+            , function (err, responseMessage) {
                 if (err)
                     console.log(err);
                 else {
-                    response.message = "Success";
-                    response.code = 200;
-                    res.json(response);
+                    var galleryObj = {
+                        'indexId': String,
+                        'url': String,
+                        'description': String,
+                        'title': String,
+                        'pictureUrl': String,
+                        'cardAddButton': []
+                    }
+                    for (var i = 0; i < responseMessage.data.length; i++) {
+                        if (responseMessage.data[i].indexId == responseMessageId) {
+                            galleryObj.indexId = responseMessage.data[i].indexId;
+                            galleryObj.cardAddButton = responseMessage.data[i].cardAddButton;
+                            galleryObj.url = responseMessage.data[i].url;
+                            galleryObj.description = responseMessage.data[i].description;
+                            galleryObj.title = responseMessage.data[i].title;
+                            galleryObj.pictureUrl = responseMessage.data[i].pictureUrl;
+                            break;
+                        }
+                    }
+                    for (var j = 0; j < galleryObj.cardAddButton.length; j++) {
+                        if (galleryObj.cardAddButton[j]._addButtonId == addButtonId) {
+                            galleryObj.cardAddButton.splice(j);
+                        }
+                    }
+                    console.log(galleryObj);
+                    ResponseMessage.findByIdAndUpdate(
+                        responseMessage._id,
+                        { $pull: { 'data': { indexId: responseMessageId } } },
+                        { safe: true, upsert: true },
+                        function (err, model) {
+                            if (err)
+                                console.log(err);
+                            else {
+                                ResponseMessage.findByIdAndUpdate(
+                                    responseMessage._id,
+                                    { $push: { "data": galleryObj } },
+                                    { safe: true, upsert: true },
+                                    function (err, model) {
+                                        if (err)
+                                            console.log(err);
+                                        else {
+                                            response.message = "Success";
+                                            response.code = 200;
+                                            res.json(response);
+                                        }
+                                    }
+                                );
+                            }
+                        });
                 }
-            }
-        );
+            });
+
     }
     else {
         ResponseMessage.findByIdAndUpdate(
@@ -308,6 +353,7 @@ addAddButtonRoute.post(function (req, res) {
     console.log(responseMessageId);
     var response = new Response();
     var id = "addbutton" + index + responseMessageId;
+    var resmesId = responseMessageId.slice(1);
     obj._addButtonId = id;
     if (type == "text") {
         ResponseMessage.findByIdAndUpdate(
@@ -327,16 +373,58 @@ addAddButtonRoute.post(function (req, res) {
     }
     else {
 
-        ResponseMessage.update(
-            { "data.indexId": responseMessageId },
-            { "$push": { "data.$.cardAddButton": obj } },
-            function (err, numAffected) {
+        ResponseMessage.findOne({ _id: resmesId }
+            , function (err, responseMessage) {
                 if (err)
                     console.log(err);
                 else {
-                    response.message = "Success";
-                    response.code = 200;
-                    res.json(response);
+                    var galleryObj = {
+                        'indexId': String,
+                        'url': String,
+                        'description': String,
+                        'title': String,
+                        'pictureUrl': String,
+                        'cardAddButton': []
+                    }
+                    for (var i = 0; i < responseMessage.data.length; i++) {
+                        if (responseMessage.data[i].indexId == responseMessageId) {
+                            galleryObj.indexId = responseMessage.data[i].indexId;
+                            galleryObj.cardAddButton = responseMessage.data[i].cardAddButton;
+                            galleryObj.url = responseMessage.data[i].url;
+                            galleryObj.description = responseMessage.data[i].description;
+                            galleryObj.title = responseMessage.data[i].title;
+                            galleryObj.pictureUrl = responseMessage.data[i].pictureUrl;
+                            break;
+                        }
+                    }
+                    galleryObj.cardAddButton.push(obj);
+                    console.log(galleryObj);
+                    ResponseMessage.findByIdAndUpdate(
+                        responseMessage._id,
+                        { $pull: { 'data': { indexId: responseMessageId } } },
+                        { safe: true, upsert: true },
+                        function (err, model) {
+                            if (err)
+                                console.log(err);
+                            else {
+                                ResponseMessage.findByIdAndUpdate(
+                                    responseMessage._id,
+                                    { $push: { "data": galleryObj } },
+                                    { safe: true, upsert: true },
+                                    function (err, model) {
+                                        if (err)
+                                            console.log(err);
+                                        else {
+                                            response.message = "Success";
+                                            response.code = 200;
+                                            res.json(response);
+                                        }
+                                    }
+                                );
+                            }
+                        }
+                    );
+
                 }
             }
         );
@@ -375,21 +463,49 @@ updateUrlRoute.get(function (req, res) {
             if (err)
                 res.send(err);
             else {
-                ResponseMessage.findOneAndUpdate(
-                    { 'data.indexId': indexId },
-                    {
-                        $set: {
-                            'data.$.url': urlText
-                        }
-                    },
+                var galleryObj = {
+                    'indexId': String,
+                    'url': String,
+                    'description': String,
+                    'title': String,
+                    'pictureUrl': String,
+                    'cardAddButton': []
+                }
+                for (var i = 0; i < responseMessage.data.length; i++) {
+                    if (responseMessage.data[i].indexId == indexId) {
+                        galleryObj.indexId = responseMessage.data[i].indexId;
+                        galleryObj.cardAddButton = responseMessage.data[i].cardAddButton;
+                        galleryObj.url = responseMessage.data[i].url;
+                        galleryObj.description = responseMessage.data[i].description;
+                        galleryObj.title = responseMessage.data[i].title;
+                        galleryObj.pictureUrl = responseMessage.data[i].pictureUrl;
+                        break;
+                    }
+                }
+                galleryObj.url = urlText;
+                console.log(galleryObj);
+                ResponseMessage.findByIdAndUpdate(
+                    responseMessage._id,
+                    { $pull: { 'data': { indexId: indexId } } },
                     { safe: true, upsert: true },
                     function (err, model) {
                         if (err)
                             console.log(err);
                         else {
-                            response.message = "Success";
-                            response.code = 200;
-                            res.json(response);
+                            ResponseMessage.findByIdAndUpdate(
+                                responseMessage._id,
+                                { $push: { "data": galleryObj } },
+                                { safe: true, upsert: true },
+                                function (err, model) {
+                                    if (err)
+                                        console.log(err);
+                                    else {
+                                        response.message = "Success";
+                                        response.code = 200;
+                                        res.json(response);
+                                    }
+                                }
+                            );
                         }
                     }
                 );
@@ -406,21 +522,49 @@ updateDescriptionRoute.get(function (req, res) {
             if (err)
                 res.send(err);
             else {
-                ResponseMessage.findOneAndUpdate(
-                    { 'data.indexId': indexId },
-                    {
-                        $set: {
-                            'data.$.description': descriptionText
-                        }
-                    },
+                var galleryObj = {
+                    'indexId': String,
+                    'url': String,
+                    'description': String,
+                    'title': String,
+                    'pictureUrl': String,
+                    'cardAddButton': []
+                }
+                for (var i = 0; i < responseMessage.data.length; i++) {
+                    if (responseMessage.data[i].indexId == indexId) {
+                        galleryObj.indexId = responseMessage.data[i].indexId;
+                        galleryObj.cardAddButton = responseMessage.data[i].cardAddButton;
+                        galleryObj.url = responseMessage.data[i].url;
+                        galleryObj.description = responseMessage.data[i].description;
+                        galleryObj.title = responseMessage.data[i].title;
+                        galleryObj.pictureUrl = responseMessage.data[i].pictureUrl;
+                        break;
+                    }
+                }
+                galleryObj.description = descriptionText;
+                console.log(galleryObj);
+                ResponseMessage.findByIdAndUpdate(
+                    responseMessage._id,
+                    { $pull: { 'data': { indexId: indexId } } },
                     { safe: true, upsert: true },
                     function (err, model) {
                         if (err)
                             console.log(err);
                         else {
-                            response.message = "Success";
-                            response.code = 200;
-                            res.json(response);
+                            ResponseMessage.findByIdAndUpdate(
+                                responseMessage._id,
+                                { $push: { "data": galleryObj } },
+                                { safe: true, upsert: true },
+                                function (err, model) {
+                                    if (err)
+                                        console.log(err);
+                                    else {
+                                        response.message = "Success";
+                                        response.code = 200;
+                                        res.json(response);
+                                    }
+                                }
+                            );
                         }
                     }
                 );
@@ -430,12 +574,14 @@ updateDescriptionRoute.get(function (req, res) {
 updateArticleRoute.post(function (req, res) {
     var responseMessageId = req.body.responseMessageId;
     var articleText = req.body.text;
+    console.log(articleText);
     var response = new Response();
     ResponseMessage.update({ _id: responseMessageId }, { 'data.articleText': articleText }, {}, function (err, user) {
         if (err) {
             res.json(err);
         }
         else {
+            console.log(user);
             response.message = "Success";
             response.code = 200;
             res.json(response);
@@ -454,21 +600,49 @@ updateTitleRoute.get(function (req, res) {
                 res.send(err);
             else {
                 if (type == 'gallery') {
-                    ResponseMessage.findOneAndUpdate(
-                        { 'data.indexId': indexId },
-                        {
-                            $set: {
-                                'data.$.text': titleText
-                            }
-                        },
+                    var galleryObj = {
+                        'indexId': String,
+                        'url': String,
+                        'description': String,
+                        'title': String,
+                        'pictureUrl': String,
+                        'cardAddButton': []
+                    }
+                    for (var i = 0; i < responseMessage.data.length; i++) {
+                        if (responseMessage.data[i].indexId == indexId) {
+                            galleryObj.indexId = responseMessage.data[i].indexId;
+                            galleryObj.cardAddButton = responseMessage.data[i].cardAddButton;
+                            galleryObj.url = responseMessage.data[i].url;
+                            galleryObj.description = responseMessage.data[i].description;
+                            galleryObj.title = responseMessage.data[i].title;
+                            galleryObj.pictureUrl = responseMessage.data[i].pictureUrl;
+                            break;
+                        }
+                    }
+                    galleryObj.title = titleText;
+                    console.log(galleryObj);
+                    ResponseMessage.findByIdAndUpdate(
+                        responseMessage._id,
+                        { $pull: { 'data': { indexId: indexId } } },
                         { safe: true, upsert: true },
                         function (err, model) {
                             if (err)
                                 console.log(err);
                             else {
-                                response.message = "Success";
-                                response.code = 200;
-                                res.json(response);
+                                ResponseMessage.findByIdAndUpdate(
+                                    responseMessage._id,
+                                    { $push: { "data": galleryObj } },
+                                    { safe: true, upsert: true },
+                                    function (err, model) {
+                                        if (err)
+                                            console.log(err);
+                                        else {
+                                            response.message = "Success";
+                                            response.code = 200;
+                                            res.json(response);
+                                        }
+                                    }
+                                );
                             }
                         }
                     );
@@ -508,7 +682,6 @@ postResponseMessageRoute.post(function (req, res) {
     var responseMessage = new ResponseMessage();
     var response = new Response();
     var date = new Date();
-    console.log(req.body.data);
     // Set the beer properties that came from the POST data
     ResponseMessage.find({}, null, { sort: { '_id': -1 } }, function (err, groups) {
         if (err) {
@@ -535,22 +708,31 @@ postResponseMessageRoute.post(function (req, res) {
                 }
                 else {
                     if (responseMessage.type == 'gallery') {
-                        ResponseMessage.findOneAndUpdate(
-                            { '_id': responseMessage._id, },
-                            {
-                                $set: {
-                                    'data.0.indexId': responseMessage.data[0].indexId + responseMessage._id
-                                }
-                            },
+                        var galleryObj = responseMessage.data[0];
+                        galleryObj.indexId = responseMessage.data[0].indexId + responseMessage._id;
+                        ResponseMessage.findByIdAndUpdate(
+                            responseMessage._id,
+                            { $pull: { 'data': { indexId: 1 } } },
                             { safe: true, upsert: true },
                             function (err, model) {
                                 if (err)
                                     console.log(err);
                                 else {
-                                    response.data = responseMessage;
-                                    response.message = "Success: New Created";
-                                    response.code = 200;
-                                    res.json(response);
+                                    ResponseMessage.findByIdAndUpdate(
+                                        responseMessage._id,
+                                        { $push: { "data": galleryObj } },
+                                        { safe: true, upsert: true },
+                                        function (err, model) {
+                                            if (err)
+                                                console.log(err);
+                                            else {
+                                                response.data = responseMessage;
+                                                response.message = "Success: New Created";
+                                                response.code = 200;
+                                                res.json(response);
+                                            }
+                                        }
+                                    );
                                 }
                             }
                         );
