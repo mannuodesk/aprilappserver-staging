@@ -131,6 +131,7 @@ io.sockets.on('connection', function (socket) {
                                 socket.broadcast.to('Lobby').emit('updatechat', 'SERVER', data.name + ' has connected to this room');
                                 socket.emit('updaterooms', rooms, data.roomName);
                                 socket.emit('conversationId', conversation._id);
+                                BotWelcomeMessage(data, date);
                             }
                         });
                     }
@@ -203,99 +204,48 @@ io.sockets.on('connection', function (socket) {
                                     }
                                     else {
                                         if (responseMessages.length != 0) {
-                                            var conversationMessages2 = new ConversationMessages();
-                                            conversationMessages2.messageType = "object";
-                                            conversationMessages2.messageData = responseMessages;
-                                            conversationMessages2._conversationId = data._conversationId;
-                                            conversationMessages2._messageToUserId = data._messageFromUserId;
-                                            conversationMessages2._messageFromUserId = "585d029f61a3b603c493454f";
-                                            conversationMessages2.createdOnUTC = date;
-                                            conversationMessages2.updatedOnUTC = date;
-                                            conversationMessages2.isDeleted = false;
-                                            conversationMessages2.save(function (err) {
-                                                if (err) {
 
+                                            setTimeout(function () {
+                                                io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                                var obj = {
+                                                    'id': '',
+                                                    'type': '',
+                                                    'data': Object
                                                 }
-                                                else {
-                                                    setTimeout(function () {
-                                                        io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                                        var obj = {
-                                                            'id': '',
-                                                            'type': '',
-                                                            'data': Object
+                                                for (var i = 0; i < responseMessages.length; i++) {
+                                                    obj = {
+                                                        'id': '',
+                                                        'type': '',
+                                                        'data': Object
+                                                    }
+                                                    obj.id = responseMessages[i]._id;
+                                                    obj.type = responseMessages[i].type;
+                                                    if (responseMessages[i].type == 'text') {
+                                                        var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                                                        textType = {
+                                                            'cardAddButton': responseMessages[i].data.cardAddButton,
+                                                            'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                                            'text': responseMessages[i].data.randomText[randomNumber].text
                                                         }
-                                                        for (var i = 0; i < responseMessages.length; i++) {
-                                                            obj = {
-                                                                'id': '',
-                                                                'type': '',
-                                                                'data': Object
-                                                            }
-                                                            obj.id = responseMessages[i]._id;
-                                                            obj.type = responseMessages[i].type;
-                                                            if (responseMessages[i].type == 'text') {
-                                                                var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
-                                                                textType = {
-                                                                    'cardAddButton': responseMessages[i].data.cardAddButton,
-                                                                    'quickReplyButton': responseMessages[i].data.quickReplyButton,
-                                                                    'text': responseMessages[i].data.randomText[randomNumber].text
-                                                                }
-                                                                obj.data = textType;
-                                                            }
-                                                            else {
-                                                                obj.data = responseMessages[i].data;
-                                                            }
-                                                            io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
-                                                        }
-                                                    }, delay2);
+                                                        obj.data = textType;
+                                                    }
+                                                    else {
+                                                        obj.data = responseMessages[i].data;
+                                                    }
+                                                    BotSendingMessage(obj, data, date);
+                                                }
+                                            }, delay2);
 
-                                                }
-                                            });
+
                                         }
                                         else {
-                                            var conversationMessages2 = new ConversationMessages();
-                                            conversationMessages2.messageText = "text";
-                                            conversationMessages2.messageData = 'Dont Know';
-                                            conversationMessages2._conversationId = data._conversationId;
-                                            conversationMessages2._messageToUserId = data._messageFromUserId;
-                                            conversationMessages2._messageFromUserId = "585d029f61a3b603c493454f";
-                                            conversationMessages2.createdOnUTC = date;
-                                            conversationMessages2.updatedOnUTC = date;
-                                            conversationMessages2.isDeleted = false;
-                                            conversationMessages2.save(function (err) {
-                                                if (err) {
-
-                                                }
-                                                else {
-                                                    setTimeout(function () {
-                                                        io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                                        io.sockets["in"](socket.room).emit('updatechat', 'April App', 'Dont Know');
-                                                    }, delay2);
-                                                }
-                                            });
+                                            BotDefaultReply(data, date);
                                         }
                                     }
                                 });
                             }
                             else {
-                                var conversationMessages2 = new ConversationMessages();
-                                conversationMessages2.messageText = "text";
-                                conversationMessages2.messageData = 'Dont Know';
-                                conversationMessages2._conversationId = data._conversationId;
-                                conversationMessages2._messageToUserId = data._messageFromUserId;
-                                conversationMessages2._messageFromUserId = "585d029f61a3b603c493454f";
-                                conversationMessages2.createdOnUTC = date;
-                                conversationMessages2.updatedOnUTC = date;
-                                conversationMessages2.isDeleted = false;
-                                conversationMessages2.save(function (err) {
-                                    if (err) {
-                                    }
-                                    else {
-                                        setTimeout(function () {
-                                            io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                            io.sockets["in"](socket.room).emit('updatechat', 'April App', 'Dont Know');
-                                        }, delay2);
-                                    }
-                                });
+                                BotDefaultReply(data, date);
                             }
                         }
                     }).populate('_phraseGroupId');
@@ -325,80 +275,42 @@ io.sockets.on('connection', function (socket) {
                         }
                         else {
                             if (responseMessages.length != 0) {
-                                var conversationMessages2 = new ConversationMessages();
-                                conversationMessages2.messageType = "object";
-                                conversationMessages2.messageData = responseMessages;
-                                conversationMessages2._conversationId = data._conversationId;
-                                conversationMessages2._messageToUserId = data._messageFromUserId;
-                                conversationMessages2._messageFromUserId = "585d029f61a3b603c493454f";
-                                conversationMessages2.createdOnUTC = date;
-                                conversationMessages2.updatedOnUTC = date;
-                                conversationMessages2.isDeleted = false;
-                                conversationMessages2.save(function (err) {
-                                    if (err) {
 
+                                setTimeout(function () {
+                                    io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                    var obj = {
+                                        'id': '',
+                                        'type': '',
+                                        'data': Object
                                     }
-                                    else {
-                                        setTimeout(function () {
-                                            io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                            var randomNumber = Math.floor(Math.random() * responseMessages.length);
-                                            var obj = {
-                                                'id': '',
-                                                'type': '',
-                                                'data': Object
+                                    for (var i = 0; i < responseMessages.length; i++) {
+                                        obj = {
+                                            'id': '',
+                                            'type': '',
+                                            'data': Object
+                                        }
+                                        obj.id = responseMessages[i]._id;
+                                        obj.type = responseMessages[i].type;
+                                        if (responseMessages[i].type == 'text') {
+                                            var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                                            textType = {
+                                                'cardAddButton': responseMessages[i].data.cardAddButton,
+                                                'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                                'text': responseMessages[i].data.randomText[randomNumber].text
                                             }
-                                            var textType = {
-                                                'cardAddButton': [],
-                                                'quickReplyButton': [],
-                                                'text': String
-                                            }
-                                            for (var i = 0; i < responseMessages.length; i++) {
-                                                obj = {
-                                                    'id': '',
-                                                    'type': '',
-                                                    'data': Object
-                                                }
-                                                obj.id = responseMessages[i]._id;
-                                                obj.type = responseMessages[i].type;
-                                                if (responseMessages[i].type == 'text') {
-                                                    textType = {
-                                                        'cardAddButton': responseMessages[i].data.cardAddButton,
-                                                        'quickReplyButton': responseMessages[i].data.quickReplyButton,
-                                                        'text': responseMessages[i].data.randomText[randomNumber]
-                                                    }
-                                                    obj.data = textType;
-                                                }
-                                                else {
-                                                    obj.data = responseMessages[i].data;
-                                                }
-                                                io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
-                                            }
-                                        }, delay2);
+                                            obj.data = textType;
+                                        }
+                                        else {
+                                            obj.data = responseMessages[i].data;
+                                        }
+                                        BotSendingMessage(obj, data, date);
+                                    }
+                                }, delay2);
 
-                                    }
-                                });
+
                             }
                             else {
-                                var conversationMessages2 = new ConversationMessages();
-                                conversationMessages2.messageText = "text";
-                                conversationMessages2.messageData = 'Dont Know';
-                                conversationMessages2._conversationId = data._conversationId;
-                                conversationMessages2._messageToUserId = data._messageFromUserId;
-                                conversationMessages2._messageFromUserId = "585d029f61a3b603c493454f";
-                                conversationMessages2.createdOnUTC = date;
-                                conversationMessages2.updatedOnUTC = date;
-                                conversationMessages2.isDeleted = false;
-                                conversationMessages2.save(function (err) {
-                                    if (err) {
-
-                                    }
-                                    else {
-                                        setTimeout(function () {
-                                            io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                            io.sockets["in"](socket.room).emit('updatechat', 'April App', 'Dont Know');
-                                        }, delay2);
-                                    }
-                                });
+                                BotDefaultReply(data, date);
                             }
                         }
                     });
@@ -418,7 +330,7 @@ io.sockets.on('connection', function (socket) {
         socket.broadcast.to(newroom).emit('updatechat', 'SERVER', socket.username + ' has joined this room');
         socket.emit('updaterooms', rooms, newroom);
     });
-    socket.on('mnb', function(){
+    socket.on('mnb', function () {
         console.log("Pong received from client");
     });
     socket.on('disconnect', function () {
@@ -427,9 +339,106 @@ io.sockets.on('connection', function (socket) {
         socket.broadcast.emit('updatechat', 'SERVER', socket.username + ' has disconnected');
         socket.leave(socket.room);
     });
+    function BotSendingMessage(obj, data, date) {
+        var conversationMessages2 = new ConversationMessages();
+        conversationMessages2.messageType = "object";
+        conversationMessages2.messageData = obj;
+        conversationMessages2._conversationId = data._conversationId;
+        conversationMessages2._messageToUserId = data._messageFromUserId;
+        conversationMessages2._messageFromUserId = "585d029f61a3b603c493454f";
+        conversationMessages2.createdOnUTC = date;
+        conversationMessages2.updatedOnUTC = date;
+        conversationMessages2.isDeleted = false;
+        conversationMessages2.save(function (err) {
+            if (err) {
+
+            }
+            else {
+                io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
+            }
+        });
+    }
+    function BotDefaultReply(data, date) {
+        ResponseMessage.find({ _blockId: '586ea566085bbe2f4ca49d8d' }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
+            if (err) {
+                res.send(err);
+            }
+            else {
+                if (responseMessages.length != 0) {
+                    io.sockets["in"](socket.room).emit('typingend', 'April App');
+                    var obj = {
+                        'id': '',
+                        'type': '',
+                        'data': Object
+                    }
+                    for (var i = 0; i < responseMessages.length; i++) {
+                        obj = {
+                            'id': '',
+                            'type': '',
+                            'data': Object
+                        }
+                        obj.id = responseMessages[i]._id;
+                        obj.type = responseMessages[i].type;
+                        if (responseMessages[i].type == 'text') {
+                            var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                            textType = {
+                                'cardAddButton': responseMessages[i].data.cardAddButton,
+                                'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                'text': responseMessages[i].data.randomText[randomNumber].text
+                            }
+                            obj.data = textType;
+                        }
+                        else {
+                            obj.data = responseMessages[i].data;
+                        }
+                        BotSendingMessage(obj, data, date);
+                    }
+                }
+            }
+        });
+    }
+    function BotWelcomeMessage(data, date) {
+        ResponseMessage.find({ _blockId: '586ea566085bbe2f4ca49d8b' }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
+            if (err) {
+                res.send(err);
+            }
+            else {
+                if (responseMessages.length != 0) {
+                    io.sockets["in"](socket.room).emit('typingend', 'April App');
+                    var obj = {
+                        'id': '',
+                        'type': '',
+                        'data': Object
+                    }
+                    for (var i = 0; i < responseMessages.length; i++) {
+                        obj = {
+                            'id': '',
+                            'type': '',
+                            'data': Object
+                        }
+                        obj.id = responseMessages[i]._id;
+                        obj.type = responseMessages[i].type;
+                        if (responseMessages[i].type == 'text') {
+                            var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                            textType = {
+                                'cardAddButton': responseMessages[i].data.cardAddButton,
+                                'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                'text': responseMessages[i].data.randomText[randomNumber].text
+                            }
+                            obj.data = textType;
+                        }
+                        else {
+                            obj.data = responseMessages[i].data;
+                        }
+                        BotSendingMessage(obj, data, date);
+                    }
+                }
+            }
+        });
+    }
 });
-function sendHeartbeat(){
-    io.sockets.emit('ping', { beat : 1 });
+function sendHeartbeat() {
+    io.sockets.emit('ping', { beat: 1 });
     setTimeout(sendHeartbeat, 2000);
 }
 
