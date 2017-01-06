@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-var mongoose= require('mongoose');
+var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 var UrlUtility = require('./../Utility/UrlUtility');
 var Groups = require('./../models/Groups');
@@ -10,9 +10,9 @@ var Promises = require('promise');
 //var GroupsBlock = require('./../dto/GroupsBlockDto');
 
 var fs = require('fs'),
-request = require('request');
+    request = require('request');
 /* GET users listing. */
-router.get('/', function(req, res, next) {
+router.get('/', function (req, res, next) {
     res.send('Hi I am a Customer Page');
 });
 
@@ -20,88 +20,133 @@ var postGroupRoute = router.route('/addGroup');
 var getAllGroupsRoute = router.route('/getAllGroups');
 var setOrderOfGroupsRoute = router.route('/setOrderOfGroups');
 var deleteOrderByIdRoute = router.route('/deleteOrderById/:orderId');
-var getGroupsBlocksRoute = router.route('/getGroupsBlocks');
+var getGroupsBlocksRoute = router.route('/getGroupsBlocks/:type');
 var utility = new UrlUtility(
     {
     });
 // Connection URL. This is where your mongodb server is running.
-var url =utility.getURL();
+var url = utility.getURL();
 mongoose.connect(url, function (err, db) {
-    if(err)
-    {
+    if (err) {
         console.log("Failed to Connect to MongoDB");
     }
     else {
         console.log("Successfully Connected");
     }
 });
-getGroupsBlocksRoute.get(function(req, res){
+getGroupsBlocksRoute.get(function (req, res) {
     var response = new Response();
+    var type = req.params.type;
     // Save the beer and check for errors
     var groupsArray = [];
     var array = [];
     var groupsBlockDto = {
-        'group':Groups,
-        'blocks':[]
-    };       
-    Groups.find({}, null, { sort: { 'order': -1 } }, function (err, groups) {
-        if (err)
-        {
-            res.send(err);
-        }
-        else
-        {
-            var array = [];
-            var groupsBlockDto = {
-                'group':Groups,
-                'blocks':[]
-            };
-            for(var i = 0; i< groups.length; i++)
-            {
-                groupsBlockDto = {
-                    'group':Groups,
-                    'blocks':[]
+        'group': Groups,
+        'blocks': []
+    };
+    if (type == '-1') {
+        Groups.find({}, null, { sort: { 'order': -1 } }, function (err, groups) {
+            if (err) {
+                res.send(err);
+            }
+            else {
+                var array = [];
+                var groupsBlockDto = {
+                    'group': Groups,
+                    'blocks': []
                 };
-                groupsBlockDto.group = groups[i];
-                var groupId = groups[i]._id;
-                console.log(groupId)
-                var counter = 0;
-                array.push(groupsBlockDto);
-                Block.find({_groupId: groupId}, function (err, blocks) {
-                    if (err)
-                    {
-                        res.send(err);
-                    }
-                    else
-                    {
-                        if(blocks.length != 0)
-                        {
-                            array[counter].blocks = blocks;
+                for (var i = 0; i < groups.length; i++) {
+                    groupsBlockDto = {
+                        'group': Groups,
+                        'blocks': []
+                    };
+                    groupsBlockDto.group = groups[i];
+                    var groupId = groups[i]._id;
+                    console.log(groupId)
+                    var counter = 0;
+                    array.push(groupsBlockDto);
+                    Block.find({ _groupId: groupId }, function (err, blocks) {
+                        if (err) {
+                            res.send(err);
                         }
-                        else
-                        {
-                            array[counter].blocks = [];
+                        else {
+                            if (blocks.length != 0) {
+                                array[counter].blocks = blocks;
+                            }
+                            else {
+                                array[counter].blocks = [];
+                            }
+                            counter = counter + 1;
+                            if (counter == i) {
+                                response.message = "Success";
+                                response.code = 200;
+                                response.data = array;
+                                res.json(response);
+                            }
                         }
-                        counter = counter + 1;
-                        if(counter == i)
-                        {
-                            response.message = "Success";
-                            response.code = 200;
-                            response.data = array;
-                            res.json(response);
-                        }
-                    }
-                });
-                
+                    });
+
+                }
+                if (groups.length == 0) {
+                    response.message = "Failure";
+                    response.code = 400;
+                    res.json(response);
+                }
             }
-            if(groups.length == 0)
-            {
-                response.message = "Failure";
-                response.code = 400;
-                res.json(response);
+        });
+    }
+    else {
+        Groups.find({ type: type }, null, { sort: { 'order': -1 } }, function (err, groups) {
+            if (err) {
+                res.send(err);
             }
-        }
-    });
+            else {
+                var array = [];
+                var groupsBlockDto = {
+                    'group': Groups,
+                    'blocks': []
+                };
+                for (var i = 0; i < groups.length; i++) {
+                    groupsBlockDto = {
+                        'group': Groups,
+                        'blocks': []
+                    };
+                    groupsBlockDto.group = groups[i];
+                    var groupId = groups[i]._id;
+                    console.log(groupId)
+                    var counter = 0;
+                    array.push(groupsBlockDto);
+                    Block.find({ _groupId: groupId }, function (err, blocks) {
+                        if (err) {
+                            res.send(err);
+                        }
+                        else {
+                            if (blocks.length != 0) {
+                                array[counter].blocks = blocks;
+                            }
+                            else {
+                                array[counter].blocks = [];
+                            }
+                            counter = counter + 1;
+                            if (counter == i) {
+                                response.message = "Success";
+                                response.code = 200;
+                                response.data = array;
+                                res.json(response);
+                            }
+                        }
+                    });
+
+                }
+                if (groups.length == 0) {
+                    response.message = "Failure";
+                    response.code = 400;
+                    res.json(response);
+                }
+            }
+        });
+    }
+
 });
 deleteOrderByIdRoute.get(function (req, res) {
     var response = new Response();
@@ -114,35 +159,29 @@ deleteOrderByIdRoute.get(function (req, res) {
                 if (group != null) {
                     group.remove();
                     Groups.find({}, null, { sort: { 'order': 'ascending' } }, function (err, groups) {
-                        if (err)
-                        {
+                        if (err) {
                             res.send(err);
                         }
-                        else
-                        {
-                            if(groups.length != 0)
-                            {
-                                for(var i = 0; i < groups.length; i++ )
-                                {
+                        else {
+                            if (groups.length != 0) {
+                                for (var i = 0; i < groups.length; i++) {
                                     console.log(groups[i].order);
-                                    if((i+1) == groups[i].order)
-                                    {
+                                    if ((i + 1) == groups[i].order) {
 
                                     }
-                                    else{
+                                    else {
                                         groups[i].order = groups[i].order - 1;
-                                        groups[i].save(function(err){
-                                            if(err){
+                                        groups[i].save(function (err) {
+                                            if (err) {
 
                                             }
-                                            else{
+                                            else {
                                                 count = count + 1;
                                                 console.log('Updated');
                                             }
                                         })
                                     }
-                                    if( i == count)
-                                    {
+                                    if (i == count) {
                                         response.message = "Success";
                                         response.code = 200;
                                         response.data = group;
@@ -150,7 +189,7 @@ deleteOrderByIdRoute.get(function (req, res) {
                                     }
                                 }
                             }
-                            else{
+                            else {
                                 response.message = "No Group Exists";
                                 response.code = 400;
                                 response.data = null;
@@ -168,77 +207,61 @@ deleteOrderByIdRoute.get(function (req, res) {
             }
         });
 });
-setOrderOfGroupsRoute.post(function(req, res){
+setOrderOfGroupsRoute.post(function (req, res) {
     var oldIndex = req.body.oldIndex;
     var newIndex = req.body.newIndex;
     var response = new Response();
     var groupId = req.body.groupId;
-    Groups.find({_id: groupId}, function (err, groups) {
-        if (err)
-        {
+    Groups.find({ _id: groupId }, function (err, groups) {
+        if (err) {
             res.send(err);
         }
-        else
-        {
-            if(groups.length != 0)
-            {
-                Groups.find({order: newIndex}, function (err, gr) {
-                    if (err)
-                    {
+        else {
+            if (groups.length != 0) {
+                Groups.find({ order: newIndex }, function (err, gr) {
+                    if (err) {
                         res.send(err);
                     }
-                    else
-                    {
-                        if(gr.length != 0)
-                        {
-                            Groups.update({ _id: gr[0]._doc._id },{order:oldIndex},{},function(err, group)
-                            {
-                                if (err)
-                                {
+                    else {
+                        if (gr.length != 0) {
+                            Groups.update({ _id: gr[0]._doc._id }, { order: oldIndex }, {}, function (err, group) {
+                                if (err) {
                                     res.send(err);
                                 }
-                                else
-                                {
-                                    Groups.update({ _id: groupId },{order:newIndex},{},function(err, group)
-                                    {
-                                        if(err)
-                                        {
+                                else {
+                                    Groups.update({ _id: groupId }, { order: newIndex }, {}, function (err, group) {
+                                        if (err) {
                                             res.json(err);
                                         }
-                                        else
-                                        {
+                                        else {
                                             response.message = "Success";
                                             response.code = 200;
                                             res.json(response);
                                         }
                                     });
                                 }
-                            });            
+                            });
                         }
                     }
                 });
-            }  
+            }
         }
     });
 });
-postGroupRoute.post(function(req, res) {
+postGroupRoute.post(function (req, res) {
     // Create a new instance of the Beer model
     var group = new Groups();
     var response = new Response();
     var date = new Date();
     // Set the beer properties that came from the POST data
     Groups.find({}, null, { sort: { '_id': -1 } }, function (err, groups) {
-        if (err)
-        {
+        if (err) {
             res.send(err);
         }
-        else
-        {
+        else {
             var order = 0;
-            for( var i = 0;i < groups.length; i++)
-            {
-                if( order < groups[i].order)
-                {
+            for (var i = 0; i < groups.length; i++) {
+                if (order < groups[i].order) {
                     order = groups[i].order;
                 }
             }
@@ -249,10 +272,10 @@ postGroupRoute.post(function(req, res) {
             group.createdOnUTC = date;
             group.updatedOnUTC = date;
             group.isDeleted = false;
-            group.isLocked = false; 
+            group.isLocked = false;
             console.log(group);
             // Save the beer and check for errors
-            group.save(function(err) {
+            group.save(function (err) {
                 if (err) {
                     res.send(err);
                 }
@@ -263,7 +286,7 @@ postGroupRoute.post(function(req, res) {
                     res.json(response);
                     console.log('done');
                 }
-            });   
+            });
         }
     });
 });
@@ -272,14 +295,12 @@ getAllGroupsRoute.get(function (req, res) {
     // Create a new instance of the Beer model
     var response = new Response();
     // Save the beer and check for errors
-    
+
     Groups.find({}, null, { sort: { 'order': -1 } }, function (err, groups) {
-        if (err)
-        {
+        if (err) {
             res.send(err);
         }
-        else
-        {
+        else {
             response.message = "Success";
             response.code = 200;
             response.data = groups;

@@ -28,8 +28,8 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var responsemessages = require('./routes/responsemessages');
 var multer = require('multer');
-server.listen(process.env.PORT);
-//server.listen(80);
+//server.listen(process.env.PORT);
+server.listen(80);
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', function (req, res) {
     res.sendfile(__dirname + '/index.html');
@@ -103,7 +103,7 @@ io.sockets.on('connection', function (socket) {
     socket.on('adduser', function (data) {// IOS will send { id: 1, name: 'ali', _roomId = '', roomName='' }
         var conversation = new Conversation();
         var date = new Date();
-        Conversation.findOne({ _user1Id: data.id, _user2Id: '5863716bbacb4910e0fbf8a2' })
+        Conversation.findOne({ _user1Id: data.id, _user2Id: '586e3b264a030317e09feeb9' })
             .exec(function (err, conversationObject) {
                 if (err) {
                     res.json(err);
@@ -111,7 +111,7 @@ io.sockets.on('connection', function (socket) {
                 else {
                     if (conversationObject == null) {
                         conversation._user1Id = data.id;
-                        conversation._user2Id = "5863716bbacb4910e0fbf8a2"
+                        conversation._user2Id = "586e3b264a030317e09feeb9"
                         conversation.username1 = data.name;
                         conversation.username2 = "April App";
                         conversation._roomId = data._roomId;
