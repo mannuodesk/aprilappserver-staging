@@ -15,6 +15,7 @@ var ConversationMessages = require('./models/ConversationMessages');
 var PhraseGroup = require('./models/PhraseGroup');
 var Phrases = require('./models/Phrases');
 var ResponseMessage = require('./models/ResponseMessages');
+var Directory = require('./models/Directory');
 
 //
 var groups = require('./routes/groups');
@@ -24,12 +25,13 @@ var phrases = require('./routes/phrases');
 var phrasegroup = require('./routes/phrasegroup');
 var usercode = require('./routes/usercode');
 var messages = require('./routes/messages');
+var directory = require('./routes/directory');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var responsemessages = require('./routes/responsemessages');
 var multer = require('multer');
-//server.listen(process.env.PORT);
-server.listen(80);
+server.listen(process.env.PORT);
+//server.listen(80);
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', function (req, res) {
     res.sendfile(__dirname + '/index.html');
@@ -70,7 +72,7 @@ app.use('/responsemessage', responsemessages);
 app.use('/phrasegroup', phrasegroup);
 app.use('/messages', messages);
 app.use('/auto', auto);
-
+app.use('/directory',directory);
 
 
 
@@ -190,65 +192,69 @@ io.sockets.on('connection', function (socket) {
                 else {
                     setTimeout(function () {
                         io.sockets["in"](socket.room).emit('typingstart', 'April App');
-                    }, delay);
-                    Phrases.find({ phraseText: { $regex: ".*" + data.messageText + ".*" } }, function (err, phrases) {
-                        if (err) {
-                            var res;
-                            res.send(err);
-                        }
-                        else {
-                            if (phrases.length != 0) {
-                                ResponseMessage.find({ _blockId: phrases[0]._phraseGroupId._blockId }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
-                                    if (err) {
-                                        res.send(err);
-                                    }
-                                    else {
-                                        if (responseMessages.length != 0) {
 
-                                            setTimeout(function () {
-                                                io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                                var obj = {
-                                                    'id': '',
-                                                    'type': '',
-                                                    'data': Object
-                                                }
-                                                for (var i = 0; i < responseMessages.length; i++) {
-                                                    obj = {
+                        Phrases.find({ phraseText: { $regex: ".*" + data.messageText + ".*" } }, function (err, phrases) {
+                            if (err) {
+                                var res;
+                                res.send(err);
+                            }
+                            else {
+                                if (phrases.length != 0) {
+                                    ResponseMessage.find({ _blockId: phrases[0]._phraseGroupId._blockId }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
+                                        if (err) {
+                                            res.send(err);
+                                        }
+                                        else {
+                                            if (responseMessages.length != 0) {
+
+                                                setTimeout(function () {
+                                                    io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                                    var obj = {
                                                         'id': '',
                                                         'type': '',
                                                         'data': Object
                                                     }
-                                                    obj.id = responseMessages[i]._id;
-                                                    obj.type = responseMessages[i].type;
-                                                    if (responseMessages[i].type == 'text') {
-                                                        var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
-                                                        textType = {
-                                                            'cardAddButton': responseMessages[i].data.cardAddButton,
-                                                            'quickReplyButton': responseMessages[i].data.quickReplyButton,
-                                                            'text': responseMessages[i].data.randomText[randomNumber].text
+                                                    for (var i = 0; i < responseMessages.length; i++) {
+                                                        obj = {
+                                                            'id': '',
+                                                            'type': '',
+                                                            'data': Object
                                                         }
-                                                        obj.data = textType;
+                                                        obj.id = responseMessages[i]._id;
+                                                        obj.type = responseMessages[i].type;
+                                                        if (responseMessages[i].type == 'text') {
+                                                            responseMessages[i].data.randomText.shift();
+                                                            var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                                                            textType = {
+                                                                'cardAddButton': responseMessages[i].data.cardAddButton,
+                                                                'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                                                'text': responseMessages[i].data.randomText[randomNumber].text
+                                                            }
+                                                            obj.data = textType;
+                                                        }
+                                                        else {
+                                                            obj.data = responseMessages[i].data;
+                                                        }
+                                                        BotSendingMessage(obj, data, date);
                                                     }
-                                                    else {
-                                                        obj.data = responseMessages[i].data;
-                                                    }
-                                                    BotSendingMessage(obj, data, date);
-                                                }
-                                            }, delay2);
+                                                }, delay2);
 
 
+                                            }
+                                            else {
+                                                io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                                BotDefaultReply(data, date);
+                                            }
                                         }
-                                        else {
-                                            BotDefaultReply(data, date);
-                                        }
-                                    }
-                                });
+                                    });
+                                }
+                                else {
+                                    io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                    BotDefaultReply(data, date);
+                                }
                             }
-                            else {
-                                BotDefaultReply(data, date);
-                            }
-                        }
-                    }).populate('_phraseGroupId');
+                        }).populate('_phraseGroupId');
+                    }, delay);
                 }
             });
         }
@@ -268,52 +274,55 @@ io.sockets.on('connection', function (socket) {
                 else {
                     setTimeout(function () {
                         io.sockets["in"](socket.room).emit('typingstart', 'April App');
-                    }, delay);
-                    ResponseMessage.find({ _blockId: data.messageData }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
-                        if (err) {
-                            res.send(err);
-                        }
-                        else {
-                            if (responseMessages.length != 0) {
 
-                                setTimeout(function () {
-                                    io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                    var obj = {
-                                        'id': '',
-                                        'type': '',
-                                        'data': Object
-                                    }
-                                    for (var i = 0; i < responseMessages.length; i++) {
-                                        obj = {
+                        ResponseMessage.find({ _blockId: data.messageData }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
+                            if (err) {
+                                res.send(err);
+                            }
+                            else {
+                                if (responseMessages.length != 0) {
+
+                                    setTimeout(function () {
+                                        io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                        var obj = {
                                             'id': '',
                                             'type': '',
                                             'data': Object
                                         }
-                                        obj.id = responseMessages[i]._id;
-                                        obj.type = responseMessages[i].type;
-                                        if (responseMessages[i].type == 'text') {
-                                            var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
-                                            textType = {
-                                                'cardAddButton': responseMessages[i].data.cardAddButton,
-                                                'quickReplyButton': responseMessages[i].data.quickReplyButton,
-                                                'text': responseMessages[i].data.randomText[randomNumber].text
+                                        for (var i = 0; i < responseMessages.length; i++) {
+                                            obj = {
+                                                'id': '',
+                                                'type': '',
+                                                'data': Object
                                             }
-                                            obj.data = textType;
+                                            obj.id = responseMessages[i]._id;
+                                            obj.type = responseMessages[i].type;
+                                            if (responseMessages[i].type == 'text') {
+                                                responseMessages[i].data.randomText.shift();
+                                                var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                                                textType = {
+                                                    'cardAddButton': responseMessages[i].data.cardAddButton,
+                                                    'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                                    'text': responseMessages[i].data.randomText[randomNumber].text
+                                                }
+                                                obj.data = textType;
+                                            }
+                                            else {
+                                                obj.data = responseMessages[i].data;
+                                            }
+                                            BotSendingMessage(obj, data, date);
                                         }
-                                        else {
-                                            obj.data = responseMessages[i].data;
-                                        }
-                                        BotSendingMessage(obj, data, date);
-                                    }
-                                }, delay2);
+                                    }, delay2);
 
 
+                                }
+                                else {
+                                    io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                    BotDefaultReply(data, date);
+                                }
                             }
-                            else {
-                                BotDefaultReply(data, date);
-                            }
-                        }
-                    });
+                        });
+                    }, delay);
                 }
             });
         }
@@ -380,6 +389,7 @@ io.sockets.on('connection', function (socket) {
                         obj.id = responseMessages[i]._id;
                         obj.type = responseMessages[i].type;
                         if (responseMessages[i].type == 'text') {
+                            responseMessages[i].data.randomText.shift();
                             var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
                             textType = {
                                 'cardAddButton': responseMessages[i].data.cardAddButton,
@@ -419,6 +429,7 @@ io.sockets.on('connection', function (socket) {
                         obj.id = responseMessages[i]._id;
                         obj.type = responseMessages[i].type;
                         if (responseMessages[i].type == 'text') {
+                            responseMessages[i].data.randomText.shift();
                             var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
                             textType = {
                                 'cardAddButton': responseMessages[i].data.cardAddButton,

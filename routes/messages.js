@@ -5,6 +5,7 @@ var UrlUtility = require('./../Utility/UrlUtility');
 var Response = require('./../dto/APIResponse');
 var BookmarkMessages = require('./../models/BookmarkMessages');
 var ConversationMessages = require('./../models/ConversationMessages');
+var ResponseMessages = require('./../models/ResponseMessages');
 
 //GET home page. 
 router.get('/', function (req, res, next) {
@@ -13,7 +14,7 @@ router.get('/', function (req, res, next) {
 
 var bookmarkMessageRoute = router.route('/bookmarkMessage');
 var getAllBookMarkMessagesRoute = router.route('/getAllBookMarkMessages/:_userId');
-var deleteBookMarkMessagesRoute = router.route('/getAllBookMarkMessages/:_bookmarkMessageId');
+var deleteBookMarkMessagesRoute = router.route('/deleteBookMarkMessages/:_bookmarkMessageId');
 var chatHistoryRoute = router.route('/chatHistory/:conversationId/:pageIndex/:pageSize');
 var utility = new UrlUtility(
     {
@@ -83,7 +84,7 @@ getAllBookMarkMessagesRoute.get(function (req, res) {
             var count = 0;
             if (bookmarkMessages.length != 0) {
                 for (var i = 0; i < bookmarkMessages.length; i++) {
-                    BookmarkMessages.find({ '_id': bookmarkMessages[i]._messageId }, null, { sort: { '_id': -1 } }, function (err, bookmarkMessages) {
+                    ResponseMessages.find({ '_id': bookmarkMessages[i]._messageId }, null, { sort: { '_id': -1 } }, function (err, bookmarkMessages) {
                         if (err) {
                             res.send(err);
                         }
