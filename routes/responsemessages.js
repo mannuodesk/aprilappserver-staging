@@ -24,7 +24,7 @@ var addAddButtonRoute = router.route('/addAddButton');
 var addGalleryCardRoute = router.route('/addGalleryCard');
 var addTextRandomRoute = router.route('/addTextRandom/:responseMessageId/:count');
 var deleteGalleryCardRoute = router.route('/deleteGalleryCard/:responseMessageId/:galleryCardId');
-var addQuickReplyRoute = router.route('/addQuickReply');
+var addQuickReplyRoute = router.route('/addQuickReply/:responseMessageId/:buttonName/:_blockId/:count');
 var sortingOfResponseMessagesRoute = router.route('/sortingOfResponseMessages');
 var updateRandomTitleRoute = router.route('/updateRandomTitle/:responseMessageId/:indexId/:titleText');
 var utility = new UrlUtility(
@@ -319,19 +319,21 @@ deleteResponseMessageRoute.get(function (req, res) {
             }
         });
 })
-addQuickReplyRoute.post(function (req, res) {
-    var responseMessageId = req.body.responseMessageId;
-    var obj = req.body.data;
-    var type = req.body.type
-    var index = req.body.index;
-    console.log(responseMessageId);
+addQuickReplyRoute.get(function (req, res) {
+    var responseMessageId = req.params.responseMessageId;
+    var btnName = req.params.buttonName;
+    var blockId = req.params._blockId;
+    var count = req.params.count;
     var response = new Response();
-    var id = "quickReply" + index + responseMessageId;
-    obj._addButtonId = id;
-
+    var obj = {
+        'buttonname':btnName,
+        '_blockId':blockId,
+        '_addButtonId':'quickreply' + count + responseMessageId
+    }
+    
     ResponseMessage.findByIdAndUpdate(
         responseMessageId,
-        { $push: { "data.quickReplyButton": obj } },
+        { $push: { "data.quickReplyBtns": obj } },
         { safe: true, upsert: true },
         function (err, model) {
             if (err)
@@ -345,6 +347,42 @@ addQuickReplyRoute.post(function (req, res) {
     );
 
 });
+/*
+addQuickReplyRoute.get(function (req, res) {
+    var responseMessageId = req.params.responseMessageId;
+    var btnName = req.params.buttonName;
+    var blockId = req.params._blockId;
+    var count = req.params.count;
+    var response = new Response();
+    var obj = {
+        'buttonname':btnName,
+        '_blockId':blockId,
+        '_addButtonId':'quickreply' + count + responseMessageId
+    }
+    ResponseMessage.findOne({ _id: responseMessageId }
+        , function (err, responseMessage) {
+            if (err)
+                res.send(err);
+            else {
+                var arrary = [];
+                arrary = responseMessage.data.quickReplyBtns;
+                ResponseMessage.findByIdAndUpdate(
+                    responseMessage._id,
+                    { "data.quickReplyBtns": arrary },
+                    { safe: true, upsert: true },
+                    function (err, model) {
+                        if (err)
+                            console.log(err);
+                        else {
+                            response.message = "Success";
+                            response.code = 200;
+                            res.json(response);
+                        }
+                    }
+                );
+            }
+        });
+});*/
 addAddButtonRoute.post(function (req, res) {
     var responseMessageId = req.body.responseMessageId;
     var obj = req.body.data;

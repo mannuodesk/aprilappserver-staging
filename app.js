@@ -30,8 +30,8 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var responsemessages = require('./routes/responsemessages');
 var multer = require('multer');
-server.listen(process.env.PORT);
-//server.listen(80);
+//server.listen(process.env.PORT);
+server.listen(80);
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', function (req, res) {
     res.sendfile(__dirname + '/index.html');
@@ -222,6 +222,10 @@ io.sockets.on('connection', function (socket) {
                                                         }
                                                         obj.id = responseMessages[i]._id;
                                                         obj.type = responseMessages[i].type;
+                                                        if(responseMessages[i].type == 'text'){
+                                                            obj.data = responseMessages[i].data;
+                                                            break;
+                                                        }
                                                         if (responseMessages[i].type == 'text') {
                                                             responseMessages[i].data.randomText.shift();
                                                             var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);

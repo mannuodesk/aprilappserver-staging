@@ -119,20 +119,35 @@ bookmarkMessageRoute.post(function (req, res) {
     var bookmarkMessage = new BookmarkMessages();
     var _userId = req.body._userId;
     var _messageId = req.body._messageId;
-    bookmarkMessage._userId = _userId;
-    bookmarkMessage._messageId = _messageId;
-    bookmarkMessage.createdOnUTC = date;
-    bookmarkMessage.updatedOnUTC = date;
-    bookmarkMessage.isDeleted = false;
-    bookmarkMessage.save(function (err) {
+    BookmarkMessages.find({ '_userId': _userId, '_messageId':messageId }, null, { sort: { '_id': -1 } }, function (err, bookmarkMessages) {
         if (err) {
-
+            res.send(err);
         }
         else {
-            response.message = "Success";
-            response.code = 200;
-            response.data = bookmarkMessage;
-            res.json(response);
+            if (bookmarkMessages.length == 0) {
+                bookmarkMessage._userId = _userId;
+                bookmarkMessage._messageId = _messageId;
+                bookmarkMessage.createdOnUTC = date;
+                bookmarkMessage.updatedOnUTC = date;
+                bookmarkMessage.isDeleted = false;
+                bookmarkMessage.save(function (err) {
+                    if (err) {
+
+                    }
+                    else {
+                        response.message = "Success";
+                        response.code = 200;
+                        response.data = bookmarkMessage;
+                        res.json(response);
+                    }
+                });
+            }
+            else {
+                response.message = "Already bookmarked";
+                response.code = 400;
+                response.data = bookmarkMessage;
+                res.json(response);
+            }
         }
     });
 });
