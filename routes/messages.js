@@ -15,7 +15,7 @@ router.get('/', function (req, res, next) {
 var bookmarkMessageRoute = router.route('/bookmarkMessage');
 var getAllBookMarkMessagesRoute = router.route('/getAllBookMarkMessages/:_userId');
 var deleteBookMarkMessagesRoute = router.route('/deleteBookMarkMessages/:_bookmarkMessageId');
-var chatHistoryRoute = router.route('/chatHistory/:conversationId/:pageIndex/:pageSize');
+var chatHistoryRoute = router.route('/chatHistory/:conversationId/:conversationMessageId');
 var utility = new UrlUtility(
     {
     });
@@ -32,19 +32,31 @@ mongoose.connect(url, function (err, db) {
 chatHistoryRoute.get(function (req, res) {
     var response = new Response();
     var conversationId = req.params.conversationId;
-    var perPage = parseInt(req.params.pageSize);
-    var pageIndex = parseInt(req.params.pageIndex);
-    ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'ascending' } }, function (err, conversationMessages) {
+    var conversationMessageId = req.params.conversationMessageId;
+    var perPage = 20;
+    ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'descending' } }, function (err, conversationMessages) {
         if (err) {
             res.send(err);
         }
         else {
+            var array = [];
+            for(var i = 0; i< conversationMessages.length;i++)
+            {
+                if(conversationMessages[i]._id == conversationMessageId)
+                {
+                    array = conversationMessages.slice(i+1, conversationMessages.length);
+                }
+            }
+            if(array.length > 20)
+            {
+                array = array.slice(0, 19);
+            }
             response.message = "Success";
             response.code = 200;
-            response.data = conversationMessages;
+            response.data = array;
             res.json(response);
         }
-    }).limit(perPage).skip(perPage * pageIndex);
+    });
 });
 deleteBookMarkMessagesRoute.get(function (req, res) {
     var response = new Response();
