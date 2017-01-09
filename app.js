@@ -72,7 +72,7 @@ app.use('/responsemessage', responsemessages);
 app.use('/phrasegroup', phrasegroup);
 app.use('/messages', messages);
 app.use('/auto', auto);
-app.use('/directory',directory);
+app.use('/directory', directory);
 
 
 
@@ -222,8 +222,9 @@ io.sockets.on('connection', function (socket) {
                                                         }
                                                         obj.id = responseMessages[i]._id;
                                                         obj.type = responseMessages[i].type;
-                                                        if(responseMessages[i].type == 'text'){
+                                                        if (responseMessages[i].type == 'quickreply') {
                                                             obj.data = responseMessages[i].data;
+                                                            BotSendingMessage(obj, data, date);
                                                             break;
                                                         }
                                                         if (responseMessages[i].type == 'text') {
@@ -301,6 +302,11 @@ io.sockets.on('connection', function (socket) {
                                             }
                                             obj.id = responseMessages[i]._id;
                                             obj.type = responseMessages[i].type;
+                                            if (responseMessages[i].type == 'quickreply') {
+                                                obj.data = responseMessages[i].data;
+                                                BotSendingMessage(obj, data, date);
+                                                break;
+                                            }
                                             if (responseMessages[i].type == 'text') {
                                                 responseMessages[i].data.randomText.shift();
                                                 var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
