@@ -170,11 +170,13 @@ io.sockets.on('connection', function (socket) {
 
     var delay = 2000; //3 second
     var delay2 = 3000;
-    socket.on('sendchat', function (data) {//IOS will send {'messageType':'', 'messageText':'', 'messageData':'', '_conversationId':'', '_messageFromUserId':''}
+    socket.on('sendchat', function (data) {//IOS will send {'messageType':'', 'messageText':'', 'messageData':'', '_conversationId':'', '_messageFromUserId':'', messageTimeStamp:''}
         var conversationMessages = new ConversationMessages();
         var date = new Date();
         //When The user will send text Message    
+        
         if (data.messageType == 'text') {
+            var UserText = data.messageText;
             data.messageText = data.messageText.replace(/[^a-zA-Z ]/g, "");
             data.messageText = data.messageText.toLowerCase();
             conversationMessages.messageType = data.messageType;
@@ -190,6 +192,12 @@ io.sockets.on('connection', function (socket) {
 
                 }
                 else {
+                    var returnMessage = {
+                        'message' : UserText,
+                        'messageTimeStamp':data.messageTimeStamp,
+                        'conversationMessageId':conversationMessages._id
+                    }
+                    io.sockets["in"](socket.room).emit('UserMessage', returnMessage);
                     setTimeout(function () {
                         io.sockets["in"](socket.room).emit('typingstart', 'April App');
 
@@ -224,7 +232,7 @@ io.sockets.on('connection', function (socket) {
                                                         obj.type = responseMessages[i].type;
                                                         if (responseMessages[i].type == 'quickreply') {
                                                             obj.data = responseMessages[i].data;
-                                                            BotSendingMessage(obj, data, date);
+                                                            io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
                                                             break;
                                                         }
                                                         if (responseMessages[i].type == 'text') {
@@ -264,6 +272,7 @@ io.sockets.on('connection', function (socket) {
             });
         }
         else {
+            var UserText = data.messageText;
             conversationMessages.messageType = data.messageType;
             conversationMessages.messageText = data.messageText;
             conversationMessages._conversationId = data._conversationId;
@@ -277,6 +286,12 @@ io.sockets.on('connection', function (socket) {
 
                 }
                 else {
+                    var returnMessage = {
+                        'message' : UserText,
+                        'messageTimeStamp':data.messageTimeStamp,
+                        'conversationMessageId':conversationMessages._id
+                    }
+                    io.sockets["in"](socket.room).emit('UserMessage', returnMessage);
                     setTimeout(function () {
                         io.sockets["in"](socket.room).emit('typingstart', 'April App');
 
@@ -304,7 +319,7 @@ io.sockets.on('connection', function (socket) {
                                             obj.type = responseMessages[i].type;
                                             if (responseMessages[i].type == 'quickreply') {
                                                 obj.data = responseMessages[i].data;
-                                                BotSendingMessage(obj, data, date);
+                                                io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
                                                 break;
                                             }
                                             if (responseMessages[i].type == 'text') {
@@ -323,8 +338,6 @@ io.sockets.on('connection', function (socket) {
                                             BotSendingMessage(obj, data, date);
                                         }
                                     }, delay2);
-
-
                                 }
                                 else {
                                     io.sockets["in"](socket.room).emit('typingend', 'April App');
