@@ -197,6 +197,7 @@ io.sockets.on('connection', function (socket) {
                     var returnMessage = {
                         'message': UserText,
                         'messageTimeStamp': data.messageTimeStamp,
+                        'name':data.name,
                         'conversationMessageId': conversationMessages._id
                     }
                     io.sockets["in"](socket.room).emit('UserMessage', returnMessage);
@@ -296,6 +297,7 @@ io.sockets.on('connection', function (socket) {
                     var returnMessage = {
                         'message': UserText,
                         'messageTimeStamp': data.messageTimeStamp,
+                        'name':data.name,
                         'conversationMessageId': conversationMessages._id
                     }
                     io.sockets["in"](socket.room).emit('UserMessage', returnMessage);
