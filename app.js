@@ -26,6 +26,7 @@ var phrasegroup = require('./routes/phrasegroup');
 var usercode = require('./routes/usercode');
 var messages = require('./routes/messages');
 var directory = require('./routes/directory');
+var aboutapril = require('./routes/aboutapril');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var responsemessages = require('./routes/responsemessages');
@@ -73,6 +74,7 @@ app.use('/phrasegroup', phrasegroup);
 app.use('/messages', messages);
 app.use('/auto', auto);
 app.use('/directory', directory);
+app.use('/aboutapril', aboutapril);
 
 
 
