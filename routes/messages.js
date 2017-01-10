@@ -35,26 +35,43 @@ chatHistoryRoute.get(function (req, res) {
     var conversationMessageId = req.params.conversationMessageId;
     var perPage = 20;
     console.log(conversationMessageId);
-    ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'descending' } }, function (err, conversationMessages) {
-        if (err) {
-            res.send(err);
-        }
-        else {
-            var array = [];
-            for (var i = 0; i < conversationMessages.length; i++) {
-                if (conversationMessages[i]._id == conversationMessageId) {
-                    array = conversationMessages.slice(i + 1, conversationMessages.length);
+    if (conversationMessageId != -1) {
+        ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'descending' } }, function (err, conversationMessages) {
+            if (err) {
+                res.send(err);
+            }
+            else {
+                var array = [];
+                for (var i = 0; i < conversationMessages.length; i++) {
+                    if (conversationMessages[i]._id == conversationMessageId) {
+                        array = conversationMessages.slice(i + 1, conversationMessages.length);
+                    }
                 }
+                if (array.length > 20) {
+                    array = array.slice(0, 19);
+                }
+                response.message = "Success";
+                response.code = 200;
+                response.data = array;
+                res.json(response);
             }
-            if (array.length > 20) {
-                array = array.slice(0, 19);
+        });
+    }
+    else {
+        ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'descending' } }, function (err, conversationMessages) {
+            if (err) {
+                res.send(err);
             }
-            response.message = "Success";
-            response.code = 200;
-            response.data = array;
-            res.json(response);
-        }
-    });
+            else {
+                
+                response.message = "Success";
+                response.code = 200;
+                response.data = conversationMessages;
+                res.json(response);
+            }
+        }).limit(perPage).skip(perPage * 0);
+    }
+
 });
 deleteBookMarkMessagesRoute.get(function (req, res) {
     var response = new Response();
@@ -101,11 +118,10 @@ getAllBookMarkMessagesRoute.get(function (req, res) {
                 }
                 for (var i = 0; i < bookmarkMessages.length; i++) {
                     idArray.push(bookmarkMessages[i]._id);
-                    if(bookmarkMessages[i].text === undefined)
-                    {
+                    if (bookmarkMessages[i].text === undefined) {
                         dataArray.push('');
                     }
-                    else{
+                    else {
                         dataArray.push(bookmarkMessages[i].text);
                     }
                     ResponseMessages.find({ '_id': bookmarkMessages[i]._messageId }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
@@ -118,17 +134,16 @@ getAllBookMarkMessagesRoute.get(function (req, res) {
                                 message: Object
                             }
                             var textObj = {
-                                'text':'',
-                                'cardAddButton':[],
-                                'quickReplyButton':[]
+                                'text': '',
+                                'cardAddButton': [],
+                                'quickReplyButton': []
                             }
                             if (responseMessages.length != 0) {
-                                if(responseMessages[0].type == "text")
-                                {
+                                if (responseMessages[0].type == "text") {
                                     textObj = {
-                                        'text':'',
-                                        'cardAddButton':[],
-                                        'quickReplyButton':[]
+                                        'text': '',
+                                        'cardAddButton': [],
+                                        'quickReplyButton': []
                                     }
                                     textObj.text = dataArray[count];
                                     textObj.cardAddButton = responseMessages[0].data.cardAddButton;
@@ -139,7 +154,7 @@ getAllBookMarkMessagesRoute.get(function (req, res) {
                                     obj.message = tempResponse;
                                     array.push(obj);
                                 }
-                                else{
+                                else {
                                     obj._id = idArray[count];
                                     obj.message = responseMessages[0];
                                     array.push(obj);
