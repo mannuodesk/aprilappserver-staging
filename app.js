@@ -174,7 +174,7 @@ io.sockets.on('connection', function (socket) {
         var conversationMessages = new ConversationMessages();
         var date = new Date();
         //When The user will send text Message    
-        
+
         if (data.messageType == 'text') {
             var UserText = data.messageText;
             data.messageText = data.messageText.replace(/[^a-zA-Z ]/g, "");
@@ -193,9 +193,9 @@ io.sockets.on('connection', function (socket) {
                 }
                 else {
                     var returnMessage = {
-                        'message' : UserText,
-                        'messageTimeStamp':data.messageTimeStamp,
-                        'conversationMessageId':conversationMessages._id
+                        'message': UserText,
+                        'messageTimeStamp': data.messageTimeStamp,
+                        'conversationMessageId': conversationMessages._id
                     }
                     io.sockets["in"](socket.room).emit('UserMessage', returnMessage);
                     setTimeout(function () {
@@ -214,7 +214,9 @@ io.sockets.on('connection', function (socket) {
                                         }
                                         else {
                                             if (responseMessages.length != 0) {
-
+                                                responseMessages.sort(function (a, b) {
+                                                    return a.order - b.order;
+                                                });
                                                 setTimeout(function () {
                                                     io.sockets["in"](socket.room).emit('typingend', 'April App');
                                                     var obj = {
@@ -287,9 +289,9 @@ io.sockets.on('connection', function (socket) {
                 }
                 else {
                     var returnMessage = {
-                        'message' : UserText,
-                        'messageTimeStamp':data.messageTimeStamp,
-                        'conversationMessageId':conversationMessages._id
+                        'message': UserText,
+                        'messageTimeStamp': data.messageTimeStamp,
+                        'conversationMessageId': conversationMessages._id
                     }
                     io.sockets["in"](socket.room).emit('UserMessage', returnMessage);
                     setTimeout(function () {
@@ -301,7 +303,9 @@ io.sockets.on('connection', function (socket) {
                             }
                             else {
                                 if (responseMessages.length != 0) {
-
+                                    responseMessages.sort(function (a, b) {
+                                        return a.order - b.order;
+                                    });
                                     setTimeout(function () {
                                         io.sockets["in"](socket.room).emit('typingend', 'April App');
                                         var obj = {

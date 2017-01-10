@@ -136,13 +136,22 @@ sortingOfResponseMessagesRoute.post(function (req, res) {
         }
         else {
             if (groups.length != 0) {
-                ResponseMessage.find({ order: newIndex }, function (err, gr) {
+                console.log(groups[0]._doc._blockId);
+                ResponseMessage.find({ _blockId:groups[0]._doc._blockId }, function (err, gr) {
                     if (err) {
                         res.send(err);
                     }
                     else {
+                        var ID = "";
                         if (gr.length != 0) {
-                            ResponseMessage.update({ _id: gr[0]._doc._id }, { order: oldIndex }, {}, function (err, group) {
+                            for( var i = 0; i< gr.length; i++)
+                            {
+                                if(gr[i].order == newIndex){
+                                    ID = gr[i]._id;
+                                    break;
+                                }
+                            }
+                            ResponseMessage.update({ _id: ID }, { order: oldIndex }, {}, function (err, group) {
                                 if (err) {
                                     res.send(err);
                                 }
@@ -277,7 +286,7 @@ deleteResponseMessageRoute.get(function (req, res) {
                 res.send(err);
             else {
                 responseMessage.remove();
-                ResponseMessage.find({}, null, { sort: { 'order': 'ascending' } }, function (err, groups) {
+                ResponseMessage.find({ '_blockId':responseMessage._blockId }, null, { sort: { 'order': 'ascending' } }, function (err, groups) {
                     if (err) {
                         res.send(err);
                     }
@@ -721,7 +730,7 @@ postResponseMessageRoute.post(function (req, res) {
     var response = new Response();
     var date = new Date();
     // Set the beer properties that came from the POST data
-    ResponseMessage.find({}, null, { sort: { '_id': -1 } }, function (err, groups) {
+    ResponseMessage.find({ '_blockId' : req.body._blockId }, null, { sort: { '_id': -1 } }, function (err, groups) {
         if (err) {
             res.send(err);
         }
