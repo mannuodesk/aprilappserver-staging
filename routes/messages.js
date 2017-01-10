@@ -34,21 +34,19 @@ chatHistoryRoute.get(function (req, res) {
     var conversationId = req.params.conversationId;
     var conversationMessageId = req.params.conversationMessageId;
     var perPage = 20;
+    console.log(conversationMessageId);
     ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'descending' } }, function (err, conversationMessages) {
         if (err) {
             res.send(err);
         }
         else {
             var array = [];
-            for(var i = 0; i< conversationMessages.length;i++)
-            {
-                if(conversationMessages[i]._id == conversationMessageId)
-                {
-                    array = conversationMessages.slice(i+1, conversationMessages.length);
+            for (var i = 0; i < conversationMessages.length; i++) {
+                if (conversationMessages[i]._id == conversationMessageId) {
+                    array = conversationMessages.slice(i + 1, conversationMessages.length);
                 }
             }
-            if(array.length > 20)
-            {
+            if (array.length > 20) {
                 array = array.slice(0, 19);
             }
             response.message = "Success";
@@ -88,6 +86,8 @@ getAllBookMarkMessagesRoute.get(function (req, res) {
     var _userId = req.params._userId;
     var response = new Response();
     var array = [];
+    var idArray = [];
+    var dataArray = [];
     BookmarkMessages.find({ '_userId': _userId }, null, { sort: { '_id': -1 } }, function (err, bookmarkMessages) {
         if (err) {
             res.send(err);
@@ -95,14 +95,55 @@ getAllBookMarkMessagesRoute.get(function (req, res) {
         else {
             var count = 0;
             if (bookmarkMessages.length != 0) {
+                var obj = {
+                    _id: String,
+                    message: Object
+                }
                 for (var i = 0; i < bookmarkMessages.length; i++) {
-                    ResponseMessages.find({ '_id': bookmarkMessages[i]._messageId }, null, { sort: { '_id': -1 } }, function (err, bookmarkMessages) {
+                    idArray.push(bookmarkMessages[i]._id);
+                    if(bookmarkMessages[i].text === undefined)
+                    {
+                        dataArray.push('');
+                    }
+                    else{
+                        dataArray.push(bookmarkMessages[i].text);
+                    }
+                    ResponseMessages.find({ '_id': bookmarkMessages[i]._messageId }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
                         if (err) {
                             res.send(err);
                         }
                         else {
-                            if (bookmarkMessages.length != 0) {
-                                array.push(bookmarkMessages[0]);
+                            obj = {
+                                _id: String,
+                                message: Object
+                            }
+                            var textObj = {
+                                'text':'',
+                                'cardAddButton':[],
+                                'quickReplyButton':[]
+                            }
+                            if (responseMessages.length != 0) {
+                                if(responseMessages[0].type == "text")
+                                {
+                                    textObj = {
+                                        'text':'',
+                                        'cardAddButton':[],
+                                        'quickReplyButton':[]
+                                    }
+                                    textObj.text = dataArray[count];
+                                    textObj.cardAddButton = responseMessages[0].data.cardAddButton;
+                                    textObj.quickReplyButton = responseMessages[0].data.quickReplyButton;
+                                    var tempResponse = responseMessages[0];
+                                    tempResponse.data = textObj;
+                                    obj._id = idArray[count];
+                                    obj.message = tempResponse;
+                                    array.push(obj);
+                                }
+                                else{
+                                    obj._id = idArray[count];
+                                    obj.message = responseMessages[0];
+                                    array.push(obj);
+                                }
                             }
                             count = count + 1;
                             if (count == i) {
@@ -131,7 +172,7 @@ bookmarkMessageRoute.post(function (req, res) {
     var bookmarkMessage = new BookmarkMessages();
     var _userId = req.body._userId;
     var _messageId = req.body._messageId;
-    BookmarkMessages.find({ '_userId': _userId, '_messageId':_messageId }, null, { sort: { '_id': -1 } }, function (err, bookmarkMessages) {
+    BookmarkMessages.find({ '_userId': _userId, '_messageId': _messageId }, null, { sort: { '_id': -1 } }, function (err, bookmarkMessages) {
         if (err) {
             res.send(err);
         }
@@ -141,6 +182,8 @@ bookmarkMessageRoute.post(function (req, res) {
                 bookmarkMessage._messageId = _messageId;
                 bookmarkMessage.createdOnUTC = date;
                 bookmarkMessage.updatedOnUTC = date;
+                bookmarkMessage.text = req.body.text;
+                bookmarkMessage.type = req.body.type;
                 bookmarkMessage.isDeleted = false;
                 bookmarkMessage.save(function (err) {
                     if (err) {

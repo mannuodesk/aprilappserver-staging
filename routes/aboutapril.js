@@ -29,34 +29,40 @@ mongoose.connect(url, function (err, db) {
         console.log("Successfully Connected");
     }
 });
-getAboutApril.get(function(req, res){
+getAboutApril.get(function (req, res) {
     var response = new Response();
-    AboutApril.find({  }, null, { sort: { } }, function (err, aboutApril) {
+    AboutApril.find({}, null, { sort: {} }, function (err, aboutApril) {
         if (err) {
             res.send(err);
         }
         else {
-            response.data = aboutApril;
+            response.data = aboutApril[0];
             response.message = "Success";
             response.code = 200;
             res.json(response);
         }
     });
 });
-updateAboutApril.post(function(req, res){
+updateAboutApril.post(function (req, res) {
     var date = new Date();
     var response = new Response();
-    var aboutApril = new AboutApril();
-    aboutApril.content = req.body.content;
-    aboutApril.createdOnUTC = date;
-    aboutApril.updatedOnUTC = date;
-    aboutApril.isDeleted = false;
-    aboutApril.save(function (err) {
-        response.data = aboutApril;
-        response.message = "Success";
-        response.code = 200;
-        res.json(response);
-    });
+    var Id = req.body.Id;
+    AboutApril.findOne({ _id: Id }
+        , function (err, aboutApril) {
+            if (err)
+                console.log(err);
+            else {
+                aboutApril.content = req.body.content;
+                aboutApril.updatedOnUTC = date;
+                aboutApril.save(function (err) {
+                    response.data = aboutApril;
+                    response.message = "Success";
+                    response.code = 200;
+                    res.json(response);
+                });
+            }
+        });
+
 });
 postAboutAprilRoute.post(function (req, res) {
     var date = new Date();
