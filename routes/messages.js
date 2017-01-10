@@ -5,6 +5,7 @@ var UrlUtility = require('./../Utility/UrlUtility');
 var Response = require('./../dto/APIResponse');
 var BookmarkMessages = require('./../models/BookmarkMessages');
 var ConversationMessages = require('./../models/ConversationMessages');
+var Conversation = require('./../models/Conversation');
 var ResponseMessages = require('./../models/ResponseMessages');
 
 //GET home page. 
@@ -34,44 +35,109 @@ chatHistoryRoute.get(function (req, res) {
     var conversationId = req.params.conversationId;
     var conversationMessageId = req.params.conversationMessageId;
     var perPage = 20;
-    console.log(conversationMessageId);
-    if (conversationMessageId != -1) {
-        ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'descending' } }, function (err, conversationMessages) {
-            if (err) {
-                res.send(err);
-            }
-            else {
-                var array = [];
-                for (var i = 0; i < conversationMessages.length; i++) {
-                    if (conversationMessages[i]._id == conversationMessageId) {
-                        array = conversationMessages.slice(i + 1, conversationMessages.length);
-                    }
-                }
-                if (array.length > 20) {
-                    array = array.slice(0, 19);
-                }
-                response.message = "Success";
-                response.code = 200;
-                response.data = array;
-                res.json(response);
-            }
-        });
+    var conversationObj = {
+        'conversationMessageId': '',
+        'id': '',
+        'type': '',
+        'data': Object,
+        'name': ''
     }
-    else {
-        ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'descending' } }, function (err, conversationMessages) {
-            if (err) {
-                res.send(err);
-            }
+    Conversation.findOne({ _id: conversationId }
+        , function (err, conversation) {
+            if (err)
+                console.log(err);
             else {
-                
-                response.message = "Success";
-                response.code = 200;
-                response.data = conversationMessages;
-                res.json(response);
-            }
-        }).limit(perPage).skip(perPage * 0);
-    }
 
+                console.log(conversation);
+                if (conversationMessageId != -1) {
+                    ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'descending' } }, function (err, conversationMessages) {
+                        if (err) {
+                            res.send(err);
+                        }
+                        else {
+                            var array = [];
+                            for (var i = 0; i < conversationMessages.length; i++) {
+                                if (conversationMessages[i]._id == conversationMessageId) {
+                                    array = conversationMessages.slice(i + 1, conversationMessages.length);
+                                }
+                            }
+                            if (array.length > 20) {
+                                array = array.slice(0, 19);
+                            }
+                            for (var i = 0; i < array.length; i++) {
+                                conversationObj = {
+                                    'conversationMessageId': '',
+                                    'id': '',
+                                    'type': '',
+                                    'data': Object,
+                                    'name': ''
+                                }
+                                if (array[i].messageType == 'text') {
+                                    conversationObj.conversationMessageId = array[i]._id;
+                                    conversationObj.messageType = array[i].messageType;
+                                    conversationObj.messageText = array[i].messageText;
+                                    conversationObj.name = conversation.username1;
+                                }
+                                else {
+                                    conversationObj.conversationMessageId = array[i]._id;
+                                    conversationObj.id = array[i].messageData.id;
+                                    conversationObj.type = array[i].messageData.type;
+                                    conversationObj.data = array[i].messageData.data;
+                                    conversationObj.messageType = array[i].messageType;
+                                    conversationObj.name = conversation.username2;
+                                }
+                                array[i] = conversationObj;
+                            }
+                            response.message = "Success";
+                            response.code = 200;
+                            response.data = array;
+                            res.json(response);
+                        }
+                    });
+                }
+                else {
+                    ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'descending' } }, function (err, conversationMessages) {
+                        if (err) {
+                            res.send(err);
+                        }
+                        else {
+                            var array = conversationMessages;
+                            for (var i = 0; i < array.length; i++) {
+                                console.log(array[i]._messageFromUserId);
+                                conversationObj = {
+                                    'conversationMessageId': '',
+                                    'id': '',
+                                    'type': '',
+                                    'data': Object,
+                                    'name': '',
+                                    'messageType': '',
+                                    'messageText': ''
+                                }
+                                if (array[i].messageType == 'text') {
+                                    conversationObj.conversationMessageId = array[i]._id;
+                                    conversationObj.messageType = array[i].messageType;
+                                    conversationObj.messageText = array[i].messageText;
+                                    conversationObj.name = conversation.username1;
+                                }
+                                else {
+                                    conversationObj.conversationMessageId = array[i]._id;
+                                    conversationObj.id = array[i].messageData.id;
+                                    conversationObj.type = array[i].messageData.type;
+                                    conversationObj.data = array[i].messageData.data;
+                                    conversationObj.messageType = array[i].messageType;
+                                    conversationObj.name = conversation.username2;
+                                }
+                                array[i] = conversationObj;
+                            }
+                            response.message = "Success";
+                            response.code = 200;
+                            response.data = array;
+                            res.json(response);
+                        }
+                    }).limit(perPage).skip(perPage * 0);
+                }
+            }
+        }).populate('_user1Id');
 });
 deleteBookMarkMessagesRoute.get(function (req, res) {
     var response = new Response();
