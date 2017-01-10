@@ -219,15 +219,18 @@ io.sockets.on('connection', function (socket) {
                                                 responseMessages.sort(function (a, b) {
                                                     return a.order - b.order;
                                                 });
+                                                console.log(responseMessages)
                                                 setTimeout(function () {
                                                     io.sockets["in"](socket.room).emit('typingend', 'April App');
                                                     var obj = {
+                                                        'conversationMessageId': '',
                                                         'id': '',
                                                         'type': '',
                                                         'data': Object
                                                     }
                                                     for (var i = 0; i < responseMessages.length; i++) {
                                                         obj = {
+                                                            'conversationMessageId': '',
                                                             'id': '',
                                                             'type': '',
                                                             'data': Object
@@ -236,7 +239,7 @@ io.sockets.on('connection', function (socket) {
                                                         obj.type = responseMessages[i].type;
                                                         if (responseMessages[i].type == 'quickreply') {
                                                             obj.data = responseMessages[i].data;
-                                                            io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
+                                                            BotSendingMessage(obj, data, date, -1);
                                                             break;
                                                         }
                                                         if (responseMessages[i].type == 'text') {
@@ -252,7 +255,7 @@ io.sockets.on('connection', function (socket) {
                                                         else {
                                                             obj.data = responseMessages[i].data;
                                                         }
-                                                        BotSendingMessage(obj, data, date);
+                                                        BotSendingMessage(obj, data, date, 0);
                                                     }
                                                 }, delay2);
 
@@ -311,12 +314,14 @@ io.sockets.on('connection', function (socket) {
                                     setTimeout(function () {
                                         io.sockets["in"](socket.room).emit('typingend', 'April App');
                                         var obj = {
+                                            'conversationMessageId': '',
                                             'id': '',
                                             'type': '',
                                             'data': Object
                                         }
                                         for (var i = 0; i < responseMessages.length; i++) {
                                             obj = {
+                                                'conversationMessageId': '',
                                                 'id': '',
                                                 'type': '',
                                                 'data': Object
@@ -325,7 +330,7 @@ io.sockets.on('connection', function (socket) {
                                             obj.type = responseMessages[i].type;
                                             if (responseMessages[i].type == 'quickreply') {
                                                 obj.data = responseMessages[i].data;
-                                                io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
+                                                BotSendingMessage(obj, data, date, -1);
                                                 break;
                                             }
                                             if (responseMessages[i].type == 'text') {
@@ -341,7 +346,7 @@ io.sockets.on('connection', function (socket) {
                                             else {
                                                 obj.data = responseMessages[i].data;
                                             }
-                                            BotSendingMessage(obj, data, date);
+                                            BotSendingMessage(obj, data, date, 0);
                                         }
                                     }, delay2);
                                 }
@@ -377,24 +382,32 @@ io.sockets.on('connection', function (socket) {
         socket.broadcast.emit('updatechat', 'SERVER', socket.username + ' has disconnected');
         socket.leave(socket.room);
     });
-    function BotSendingMessage(obj, data, date) {
-        var conversationMessages2 = new ConversationMessages();
-        conversationMessages2.messageType = "object";
-        conversationMessages2.messageData = obj;
-        conversationMessages2._conversationId = data._conversationId;
-        conversationMessages2._messageToUserId = data._messageFromUserId;
-        conversationMessages2._messageFromUserId = "585d029f61a3b603c493454f";
-        conversationMessages2.createdOnUTC = date;
-        conversationMessages2.updatedOnUTC = date;
-        conversationMessages2.isDeleted = false;
-        conversationMessages2.save(function (err) {
-            if (err) {
-
-            }
-            else {
+    function BotSendingMessage(obj, data, date, type) {
+        if (type == -1) {
+            setTimeout(function () {
                 io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
-            }
-        });
+            }, 2000);
+        }
+        else {
+            var conversationMessages2 = new ConversationMessages();
+            conversationMessages2.messageType = "object";
+            conversationMessages2.messageData = obj;
+            conversationMessages2._conversationId = data._conversationId;
+            conversationMessages2._messageToUserId = data._messageFromUserId;
+            conversationMessages2._messageFromUserId = "585d029f61a3b603c493454f";
+            conversationMessages2.createdOnUTC = date;
+            conversationMessages2.updatedOnUTC = date;
+            conversationMessages2.isDeleted = false;
+            conversationMessages2.save(function (err) {
+                if (err) {
+
+                }
+                else {
+                    obj.conversationMessageId = conversationMessages2._id;
+                    io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
+                }
+            });
+        }
     }
     function BotDefaultReply(data, date) {
         ResponseMessage.find({ _blockId: '586ea566085bbe2f4ca49d8d' }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
