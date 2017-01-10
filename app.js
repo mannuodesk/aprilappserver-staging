@@ -147,7 +147,7 @@ io.sockets.on('connection', function (socket) {
                         socket.emit('updatechat', 'SERVER', 'you have connected to ' + data.roomName);
                         socket.broadcast.to('Lobby').emit('updatechat', 'SERVER', data.name + ' has connected to this room');
                         socket.emit('updaterooms', rooms, data.roomName);
-                        socket.emit('conversationId', conversation._id);
+                        socket.emit('conversationId', conversationObject._id);
                     }
                 }
             });
