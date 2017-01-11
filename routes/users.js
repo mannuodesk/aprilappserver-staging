@@ -346,87 +346,108 @@ postUserRoute.post(function (req, res) {
     // Set the beer properties that came from the POST data
     var email = req.body.email;
     var channel = req.body.channel;
-    User.find({ 'email': email, 'channel': channel }, function (err, exuser) {
+    var pword = req.body.password;
+    var uppercase = 0;
+    var lowercase = 0;
+    var numeric = 0;
+    for (i = 0; i < pword.length; i++) {
+        if ('A' <= pword[i] && pword[i] <= 'Z') // check if you have an uppercase
+            uppercase++;
+        if ('a' <= pword[i] && pword[i] <= 'z') // check if you have a lowercase
+            lowercase++;
+        if ('0' <= pword[i] && pword[i] <= '9') // check if you have a numeric
+            numeric++;
+    }
+    if (uppercase == 0 || lowercase == 0 || numeric == 0) {
+        response.message = "Password should be alphanumeric with capital Letters";
+        response.code = 400;
+        res.json(response);
+    }
+    else {
 
-        if (!exuser) {
 
-        }
-        else {
-            if (exuser.length == 0) {
-                User.findOne({ 'email': email }, function (err, result) {
-                    if (err) { /* handle err */ }
+        User.find({ 'email': email, 'channel': channel }, function (err, exuser) {
 
-                    if (result) {
-                        response.message = "User is already registered with this Email. Try a new Email";
-                        response.code = 400;
-                        res.json(response);
-                    } else {
-                        fullUrl = req.protocol + '://' + req.get('host');
-                        user.firstName = req.body.firstName;
-                        user.lastName = req.body.lastName;
-                        user.email = req.body.email;
-                        user.password = req.body.password;
-                        user.password = pass.createHash(user.password);
-                        user.channel = req.body.channel;
-                        user.gender = 'N/A';
-                        user.age = 0;
-                        user.latLocation = req.body.latLocation;
-                        user.longLocation = req.body.longLocation;
-                        user.deviceInfo = req.body.deviceInfo;
-                        user.createdOnUTC = date;
-                        user.updatedOnUTC = date;
-                        user.isDeleted = false;
-                        if (user.channel != "email") {
-                            user.pictureUrl = req.body.pictureUrl;
-                        }
-                        else {
-                            user.pictureUrl = req.body.pictureUrl;
-                        }
-                        console.log(user);
-                        // Save the beer and check for errors
-                        user.save(function (err) {
-                            if (err) {
-                                res.send(err);
-                            }
-                            else {
-                                if (user.channel != "email") {
-                                    download(user.pictureUrl, user._id, function () {
-                                        User.findById(user._id, function (err, p) {
-                                            if (!p)
-                                                console.log("Couldnt Updated");
-                                            else {
-                                                response.data = p._doc;
-                                                response.message = "Success";
-                                                response.code = 200;
+            if (!exuser) {
 
-                                                res.json(response);
-                                            }
-                                        });
-                                        console.log('done');
-                                    });
-                                }
-                                else {
-                                    response.data = user;
-                                    response.message = "Success";
-                                    response.code = 200;
-
-                                    res.json(response);
-                                }
-
-                            }
-                        });
-                    }
-                });
             }
             else {
-                response.data = exuser[0]._doc.channel;
-                response.message = "User Already Exists";
-                response.code = 400;
+                if (exuser.length == 0) {
+                    User.findOne({ 'email': email }, function (err, result) {
+                        if (err) { /* handle err */ }
 
-                res.json(response);
+                        if (result) {
+                            response.message = "User is already registered with this Email. Try a new Email";
+                            response.code = 400;
+                            res.json(response);
+                        } else {
+                            fullUrl = req.protocol + '://' + req.get('host');
+                            user.firstName = req.body.firstName;
+                            user.lastName = req.body.lastName;
+                            user.email = req.body.email;
+                            user.password = req.body.password;
+                            user.password = pass.createHash(user.password);
+                            user.channel = req.body.channel;
+                            user.gender = 'N/A';
+                            user.age = 0;
+                            user.latLocation = req.body.latLocation;
+                            user.longLocation = req.body.longLocation;
+                            user.deviceInfo = req.body.deviceInfo;
+                            user.createdOnUTC = date;
+                            user.updatedOnUTC = date;
+                            user.isDeleted = false;
+                            if (user.channel != "email") {
+                                user.pictureUrl = req.body.pictureUrl;
+                            }
+                            else {
+                                user.pictureUrl = req.body.pictureUrl;
+                            }
+                            console.log(user);
+                            // Save the beer and check for errors
+                            user.save(function (err) {
+                                if (err) {
+                                    res.send(err);
+                                }
+                                else {
+                                    if (user.channel != "email") {
+                                        download(user.pictureUrl, user._id, function () {
+                                            User.findById(user._id, function (err, p) {
+                                                if (!p)
+                                                    console.log("Couldnt Updated");
+                                                else {
+                                                    response.data = p._doc;
+                                                    response.message = "Success";
+                                                    response.code = 200;
+
+                                                    res.json(response);
+                                                }
+                                            });
+                                            console.log('done');
+                                        });
+                                    }
+                                    else {
+                                        response.data = user;
+                                        response.message = "Success";
+                                        response.code = 200;
+
+                                        res.json(response);
+                                    }
+
+                                }
+                            });
+                        }
+                    });
+                }
+                else {
+                    response.data = exuser[0]._doc.channel;
+                    response.message = "User Already Exists";
+                    response.code = 400;
+
+                    res.json(response);
+                }
             }
-        }
-    });
+        });
+    }
 });
 socialMediaLoginRoute.post(function (req, res) {
     var user = new User();
