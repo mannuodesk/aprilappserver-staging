@@ -27,6 +27,7 @@ var deleteGalleryCardRoute = router.route('/deleteGalleryCard/:responseMessageId
 var addQuickReplyRoute = router.route('/addQuickReply/:responseMessageId/:buttonName/:_blockId/:count');
 var sortingOfResponseMessagesRoute = router.route('/sortingOfResponseMessages');
 var updateRandomTitleRoute = router.route('/updateRandomTitle/:responseMessageId/:indexId/:titleText');
+var deleteRandomTitleRoute = router.route('/deleteRandomText/:responseMessageId/:indexId');
 var utility = new UrlUtility(
     {
     });
@@ -38,6 +39,31 @@ mongoose.connect(url, function (err, db) {
     else {
         console.log("Successfully Connected");
     }
+});
+deleteRandomTitleRoute.get(function (req, res) {
+    var responseMessageId = req.params.responseMessageId;
+    var indexId = req.params.indexId;
+    var response = new Response();
+    ResponseMessage.findOne({ _id: responseMessageId }
+        , function (err, responseMessage) {
+            if (err)
+                res.send(err);
+            else {
+                ResponseMessage.findByIdAndUpdate(
+                    responseMessageId,
+                    { $pull: { 'data.randomText': { indexId: indexId } } },
+                    { safe: true, upsert: true },
+                    function (err, model) {
+                        if (err)
+                            console.log(err);
+                        else {
+                            response.message = "Success";
+                            response.code = 200;
+                            res.json(response);
+                        }
+                    });
+            }
+        });
 });
 updateRandomTitleRoute.get(function (req, res) {
     var responseMessageId = req.params.responseMessageId;
@@ -137,16 +163,15 @@ sortingOfResponseMessagesRoute.post(function (req, res) {
         else {
             if (groups.length != 0) {
                 console.log(groups[0]._doc._blockId);
-                ResponseMessage.find({ _blockId:groups[0]._doc._blockId }, function (err, gr) {
+                ResponseMessage.find({ _blockId: groups[0]._doc._blockId }, function (err, gr) {
                     if (err) {
                         res.send(err);
                     }
                     else {
                         var ID = "";
                         if (gr.length != 0) {
-                            for( var i = 0; i< gr.length; i++)
-                            {
-                                if(gr[i].order == newIndex){
+                            for (var i = 0; i < gr.length; i++) {
+                                if (gr[i].order == newIndex) {
                                     ID = gr[i]._id;
                                     break;
                                 }
@@ -181,7 +206,7 @@ deleteQuickReplyRoute.get(function (req, res) {
     var response = new Response();
     ResponseMessage.findByIdAndUpdate(
         responseMessageId,
-        { $pull: { 'data.quickReplyButton': { _addButtonId: addButtonId } } },
+        { $pull: { 'data.quickReplyBtns': { _addButtonId: addButtonId } } },
         { safe: true, upsert: true },
         function (err, model) {
             if (err)
@@ -286,7 +311,7 @@ deleteResponseMessageRoute.get(function (req, res) {
                 res.send(err);
             else {
                 responseMessage.remove();
-                ResponseMessage.find({ '_blockId':responseMessage._blockId }, null, { sort: { 'order': 'ascending' } }, function (err, groups) {
+                ResponseMessage.find({ '_blockId': responseMessage._blockId }, null, { sort: { 'order': 'ascending' } }, function (err, groups) {
                     if (err) {
                         res.send(err);
                     }
@@ -335,11 +360,11 @@ addQuickReplyRoute.get(function (req, res) {
     var count = req.params.count;
     var response = new Response();
     var obj = {
-        'buttonname':btnName,
-        '_blockId':blockId,
-        '_addButtonId':'quickreply' + count + responseMessageId
+        'buttonname': btnName,
+        '_blockId': blockId,
+        '_addButtonId': 'quickreply' + count + responseMessageId
     }
-    
+
     ResponseMessage.findByIdAndUpdate(
         responseMessageId,
         { $push: { "data.quickReplyBtns": obj } },
@@ -730,7 +755,7 @@ postResponseMessageRoute.post(function (req, res) {
     var response = new Response();
     var date = new Date();
     // Set the beer properties that came from the POST data
-    ResponseMessage.find({ '_blockId' : req.body._blockId }, null, { sort: { '_id': -1 } }, function (err, groups) {
+    ResponseMessage.find({ '_blockId': req.body._blockId }, null, { sort: { '_id': -1 } }, function (err, groups) {
         if (err) {
             res.send(err);
         }
