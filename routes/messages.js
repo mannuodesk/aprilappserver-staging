@@ -253,7 +253,7 @@ bookmarkMessageRoute.post(function (req, res) {
     var bookmarkMessage = new BookmarkMessages();
     var _userId = req.body._userId;
     var _messageId = req.body._messageId;
-    BookmarkMessages.find({ '_userId': _userId, '_messageId': _messageId }, null, { sort: { '_id': -1 } }, function (err, bookmarkMessages) {
+    BookmarkMessages.find({ '_userId': _userId, '_messageId': _messageId, 'text': req.body.text }, null, { sort: { '_id': -1 } }, function (err, bookmarkMessages) {
         if (err) {
             res.send(err);
         }

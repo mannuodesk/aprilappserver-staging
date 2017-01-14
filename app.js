@@ -210,7 +210,7 @@ io.sockets.on('connection', function (socket) {
                                 res.send(err);
                             }
                             else {
-                                if (phrases.length != 0) {
+                                if (phrases.length != 0 && data.messageText != "") {
                                     ResponseMessage.find({ _blockId: phrases[0]._phraseGroupId._blockId }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
                                         if (err) {
                                             res.send(err);
