@@ -281,7 +281,7 @@ io.sockets.on('connection', function (socket) {
         }
         else {
             var UserText = data.messageText;
-            conversationMessages.messageType = data.messageType;
+            conversationMessages.messageType = 'text';
             conversationMessages.messageText = UserText;
             conversationMessages._conversationId = data._conversationId;
             conversationMessages._messageToUserId = "585d029f61a3b603c493454f";
