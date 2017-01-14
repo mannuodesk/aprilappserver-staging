@@ -182,7 +182,7 @@ io.sockets.on('connection', function (socket) {
             data.messageText = data.messageText.replace(/[^a-zA-Z ]/g, "");
             data.messageText = data.messageText.toLowerCase();
             conversationMessages.messageType = data.messageType;
-            conversationMessages.messageText = data.messageText;
+            conversationMessages.messageText = UserText;
             conversationMessages._conversationId = data._conversationId;
             conversationMessages._messageToUserId = "585d029f61a3b603c493454f";
             conversationMessages._messageFromUserId = data._messageFromUserId;
@@ -282,7 +282,7 @@ io.sockets.on('connection', function (socket) {
         else {
             var UserText = data.messageText;
             conversationMessages.messageType = data.messageType;
-            conversationMessages.messageText = data.messageText;
+            conversationMessages.messageText = UserText;
             conversationMessages._conversationId = data._conversationId;
             conversationMessages._messageToUserId = "585d029f61a3b603c493454f";
             conversationMessages._messageFromUserId = data._messageFromUserId;
