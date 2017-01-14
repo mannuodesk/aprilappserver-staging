@@ -113,7 +113,7 @@ chatHistoryRoute.get(function (req, res) {
                                     'messageType': '',
                                     'messageText': ''
                                 }
-                                if (array[i].messageType == 'text') {
+                                if (array[i].messageType == 'text' || array[i].messageType == 'block') {
                                     conversationObj.conversationMessageId = array[i]._id;
                                     conversationObj.messageType = array[i].messageType;
                                     conversationObj.messageText = array[i].messageText;
@@ -236,6 +236,7 @@ getAllBookMarkMessagesRoute.get(function (req, res) {
                         }
                     });
                 }
+                console.log(idArray);
             }
             else {
                 response.message = "Success";
