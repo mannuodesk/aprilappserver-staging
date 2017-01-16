@@ -381,42 +381,6 @@ addQuickReplyRoute.get(function (req, res) {
     );
 
 });
-/*
-addQuickReplyRoute.get(function (req, res) {
-    var responseMessageId = req.params.responseMessageId;
-    var btnName = req.params.buttonName;
-    var blockId = req.params._blockId;
-    var count = req.params.count;
-    var response = new Response();
-    var obj = {
-        'buttonname':btnName,
-        '_blockId':blockId,
-        '_addButtonId':'quickreply' + count + responseMessageId
-    }
-    ResponseMessage.findOne({ _id: responseMessageId }
-        , function (err, responseMessage) {
-            if (err)
-                res.send(err);
-            else {
-                var arrary = [];
-                arrary = responseMessage.data.quickReplyBtns;
-                ResponseMessage.findByIdAndUpdate(
-                    responseMessage._id,
-                    { "data.quickReplyBtns": arrary },
-                    { safe: true, upsert: true },
-                    function (err, model) {
-                        if (err)
-                            console.log(err);
-                        else {
-                            response.message = "Success";
-                            response.code = 200;
-                            res.json(response);
-                        }
-                    }
-                );
-            }
-        });
-});*/
 addAddButtonRoute.post(function (req, res) {
     var responseMessageId = req.body.responseMessageId;
     var obj = req.body.data;
@@ -838,5 +802,3 @@ getAllResponseMessagesRoute.get(function (req, res) {
     });
 });
 module.exports = router;
-
-

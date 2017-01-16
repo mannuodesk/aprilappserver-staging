@@ -50,7 +50,9 @@ postPhrasesRoute.post(function (req, res) {
     var date = new Date();
     // Set the beer properties that came from the POST data
     var phrase = req.body.phraseText;
+    phrase = phrase.replace(/[^a-zA-Z ]/g, "");
     phrases.phraseText = phrase.toLowerCase();
+    
     phrases.phrase = req.body.phraseText;
     phrases._phraseGroupId = req.body._phraseGroupId;
     phrases.createdOnUTC = date;
