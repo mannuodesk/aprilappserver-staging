@@ -50,7 +50,7 @@ chatHistoryRoute.get(function (req, res) {
 
                 console.log(conversation);
                 if (conversationMessageId != -1) {
-                    ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'descending' } }, function (err, conversationMessages) {
+                    ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'ascending' } }, function (err, conversationMessages) {
                         if (err) {
                             res.send(err);
                         }
@@ -62,7 +62,7 @@ chatHistoryRoute.get(function (req, res) {
                                 }
                             }
                             if (array.length > 20) {
-                                array = array.slice(0, 19);
+                                array = array.slice(Math.max(array.length - 20, 1))
                             }
                             for (var i = 0; i < array.length; i++) {
                                 conversationObj = {
@@ -96,12 +96,16 @@ chatHistoryRoute.get(function (req, res) {
                     });
                 }
                 else {
-                    ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'descending' } }, function (err, conversationMessages) {
+                    ConversationMessages.find({ '_conversationId': conversationId }, null, { sort: { 'createdOnUTC': 'ascending' } }, function (err, conversationMessages) {
                         if (err) {
                             res.send(err);
                         }
                         else {
-                            var array = conversationMessages;
+                            var array = [];
+                            if (conversationMessages.length > 20) {
+                                array = conversationMessages.slice(Math.max(conversationMessages.length - 20, 1));
+                            }
+                            
                             for (var i = 0; i < array.length; i++) {
                                 console.log(array[i]._messageFromUserId);
                                 conversationObj = {
@@ -134,7 +138,7 @@ chatHistoryRoute.get(function (req, res) {
                             response.data = array;
                             res.json(response);
                         }
-                    }).limit(perPage).skip(perPage * 0);
+                    })/*.limit(perPage).skip(perPage * 0)*/;
                 }
             }
         }).populate('_user1Id');
