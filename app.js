@@ -387,6 +387,7 @@ io.sockets.on('connection', function (socket) {
         socket.leave(socket.room);
     });
     function BotSendingMessage(obj, data, date, type) {
+        date = new Date();
         if (type == -1) {
             setTimeout(function () {
                 io.sockets["in"](socket.room).emit('updatechat', 'April App', obj);
@@ -414,6 +415,7 @@ io.sockets.on('connection', function (socket) {
         }
     }
     function BotDefaultReply(data, date) {
+        date = new Date();
         ResponseMessage.find({ _blockId: '586ea566085bbe2f4ca49d8d' }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
             if (err) {
                 res.send(err);
@@ -454,6 +456,7 @@ io.sockets.on('connection', function (socket) {
         });
     }
     function BotWelcomeMessage(data, date) {
+        date = new Date();
         ResponseMessage.find({ _blockId: '586ea566085bbe2f4ca49d8b' }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
             if (err) {
                 res.send(err);
