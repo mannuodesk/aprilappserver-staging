@@ -24,6 +24,7 @@ var getAdminUserRoute = router.route('/getAdminUser');
 var deleteUserRoute = router.route('/deleteUser/:userId');
 var checkUserRoute = router.route('/checkUser/:userId');
 var dashboardStatsRoute = router.route('/dashboardStats');
+var dashboardGenderStatsRoute = router.route('/dashboardGenderStats');
 var socialMediaLoginRoute = router.route('/socialMediaLogin');
 var fullUrl = "";
 var utility = new UrlUtility(
@@ -39,6 +40,73 @@ mongoose.connect(url, function (err, db) {
     }
     else {
         console.log("Successfully Connected");
+    }
+});
+dashboardGenderStatsRoute.get(function (req, res) {
+    var response = new Response();
+    var date = new Date();
+    
+    var loopDate = new Date();
+    var TotalMaleUsers = 0;
+    var TotalFeMaleUsers = 0;
+    var TotalMaleUsersPerMonth = 0;
+    var TotalFeMaleUsersPerMonth = 0;
+    var GenderChartPerDayObj = {
+        'date': String,
+        'maleCount': Number,
+        'femaleCount': Number
+    }
+    var dateArray = [];
+    for (var i = 0; i < 7; i++) {
+        loopDate = new Date();
+        if (i == 0) {
+            dateArray.push(date);
+        }
+        else {
+            loopDate.setDate(date.getDate() - 1);
+            dateArray.push(loopDate);
+            date = loopDate;
+        }
+    }
+    var count = 0;
+    var ChartDataArray = [];
+    var loopCountWhile = 0;
+    while(loopCountWhile < dateArray.length){
+    //for (var i = 0; i < dateArray.length; i++) {
+        var serachDate = new Date(dateArray[i]);
+        User.find({'createdOnUTC':{ $gte: dateArray[i], $lte: dateArray[i+1]} }, null, { }, function (err, users) {
+            if (err) {
+                res.send(err);
+            }
+            else {
+                console.log(serachDate);
+                for(var j = 0; j< users.length; j++){
+                    GenderChartPerDayObj = {
+                        'date': String,
+                        'maleCount': Number,
+                        'femaleCount': Number
+                    }
+                    var month = dateArray.getMonth() + 1;
+                    GenderChartPerDayObj = dateArray[i].getFullYear().toString() 
+                    + "-" + month.toString(); + "-" + dateArray[i].getDate();
+                    if(users[j].gender == 'male'){
+                        GenderChartPerDayObj.maleCount = GenderChartPerDayObj .maleCount + 1;
+                    }
+                    else if(users[j].gender == 'female'){
+                        GenderChartPerDayObj.femaleCount = GenderChartPerDayObj .femaleCount + 1;
+                    }
+                    ChartDataArray.push(GenderChartPerDayObj);
+                }
+                count = count + 1;
+                if(loopCountWhile == count)
+                {
+                    response.message = "Success";
+                    response.code = 200;
+                    response.data = ChartDataArray;
+                    res.json(response);
+                }
+            }
+        });
     }
 });
 dashboardStatsRoute.get(function (req, res) {

@@ -16,7 +16,7 @@ var getAllResponseMessagesOnBlockRoute = router.route('/getAllResponseMessagesOn
 var updateTitleRoute = router.route('/updateTitle/:responseMessageId/:indexId/:type/:titleText');
 var updateDescriptionRoute = router.route('/updateDescription/:responseMessageId/:indexId/:descriptionText');
 var updateArticleRoute = router.route('/updateArticle')
-var updateUrlRoute = router.route('/updateUrl/:responseMessageId/:indexId/:urlText');
+var updateUrlRoute = router.route('/updateUrl');
 var deleteResponseMessageRoute = router.route('/deleteResponseMessage/:responseMessageId');
 var deleteAddButtonRoute = router.route('/deleteAddButton/:responseMessageId/:addButtonId/:type');
 var deleteQuickReplyRoute = router.route('/deleteQuickReply/:responseMessageId/:_quickReplyId');
@@ -525,10 +525,10 @@ addGalleryCardRoute.post(function (req, res) {
         }
     );
 });
-updateUrlRoute.get(function (req, res) {
-    var responseMessageId = req.params.responseMessageId;
-    var indexId = req.params.indexId;
-    var urlText = req.params.urlText;
+updateUrlRoute.post(function (req, res) {
+    var responseMessageId = req.body.responseMessageId;
+    var indexId = req.body.indexId;
+    var urlText = req.body.urlText;
     var response = new Response();
     ResponseMessage.findOne({ _id: responseMessageId }
         , function (err, responseMessage) {
