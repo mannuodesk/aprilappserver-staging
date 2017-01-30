@@ -7,6 +7,8 @@ var BookmarkMessages = require('./../models/BookmarkMessages');
 var ConversationMessages = require('./../models/ConversationMessages');
 var Conversation = require('./../models/Conversation');
 var ResponseMessages = require('./../models/ResponseMessages');
+var events = require('events');
+var EventEmitter = events.EventEmitter;
 
 //GET home page. 
 router.get('/', function (req, res, next) {
@@ -281,80 +283,130 @@ getAllBookMarkMessagesRoute.get(function (req, res) {
     var date = new Date();
     var _userId = req.params._userId;
     var response = new Response();
-    var array = [];
-    var idArray = [];
-    var dataArray = [];
+    var obj = {
+        text: String,
+        cardAddButton: [],
+        quickReplyButton: []
+    };
+    var responseMessageData = new Object();
+    var responseArray = [];
+    var loopCount = 0;
+    var flowController = new EventEmitter();
+    var responseMessageArray = [];
     BookmarkMessages.find({ '_userId': _userId }, null, { sort: { '_id': -1 } }, function (err, bookmarkMessages) {
         if (err) {
             res.send(err);
         }
         else {
-            var count = 0;
             if (bookmarkMessages.length != 0) {
-                var obj = {
-                    _id: String,
-                    message: Object
-                }
-                for (var i = 0; i < bookmarkMessages.length; i++) {
-                    idArray.push(bookmarkMessages[i]._id);
-                    if (bookmarkMessages[i].text === undefined) {
-                        dataArray.push('');
-                    }
-                    else {
-                        dataArray.push(bookmarkMessages[i].text);
+
+                var temp = Object;
+                //for (var bookmarkMessage in bookmarkMessages) {
+                flowController.on('doWork', function (i) {
+                    if (i >= bookmarkMessages.length) {
+                        flowController.emit('finished');
+                        return;
                     }
                     ResponseMessages.find({ '_id': bookmarkMessages[i]._messageId }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
                         if (err) {
                             res.send(err);
                         }
                         else {
+
+
+
+                        if(responseMessages.length != 0){
+                            temp = responseMessages[0];
+                            responseMessageArray.push(temp);
+                            flowController.emit('doWork', i + 1);
+                        }
+                            else{
+                                var responseMessage = new ResponseMessages();
+                                responseMessage.type = 'text';
+                                var obj = {
+                                    text:'',
+                                    cardAddButton:[],
+                                    quickReplyButton:[]
+                                }
+                                responseMessage.data = obj;
+                                responseMessageArray.push(responseMessage);
+                                flowController.emit('doWork', i + 1);
+                            }
+                            //loopCount = loopCount + 1;
+                        }
+                        //asyncFunction(item[i], function () {
+                        //flowController.emit('doWork', i + 1);
+                    });
+
+                    /*ResponseMessages.find({ '_id': bookmarkMessages[loopCount]._messageId }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
+                        if (err) {
+                            res.send(err);
+                        }
+                        else {
+    
+    
+    
+    
+                            temp = responseMessages[0];
+                            responseMessageArray.push(temp);
+                            loopCount = loopCount + 1;
+                        }*/
+                    /*if(loopCount == bookmarkMessages.length)
+                    {
+                        flowController.emit('finished');
+                        return;
+                    }*/
+                    //});
+                });
+                flowController.emit('doWork', 0);
+                //}
+                flowController.on('finished', function () {
+                    for (var i = 0; i < bookmarkMessages.length; i++) {
+                        responseMessageData = new Object();
+                        responseMessageData = responseMessageArray[i];
+                        if(responseMessageData.type == 'singletext'){
+                            responseMessageData.type = 'text';
+                        }
+                        if (bookmarkMessages[i].type == 'text') {
+                            console.log('alert');
                             obj = {
-                                _id: String,
-                                message: Object
+                                text: String,
+                                cardAddButton: [],
+                                quickReplyButton: []
                             }
-                            var textObj = {
-                                'text': '',
-                                'cardAddButton': [],
-                                'quickReplyButton': []
+                            obj.text = bookmarkMessages[i].text;
+                            obj.cardAddButton = responseMessageArray[i].data.cardAddButton;
+                            obj.quickReplyButton = responseMessageArray[i].data.quickReplyButton;
+                            responseMessageData.data = obj;
+                            responseMessageData._id = bookmarkMessages[i]._id;
+                            if (responseMessageData.data.text === undefined) {
+                                console.log(loopCount);
+                                console.log('crash:' + bookmarkMessages[i].text);
+                                responseMessageData.data.text = bookmarkMessages[i].text;
+                                responseArray.push(responseMessageData);
                             }
-                            if (responseMessages.length != 0) {
-                                if (responseMessages[0].type == "text") {
-                                    textObj = {
-                                        'text': '',
-                                        'cardAddButton': [],
-                                        'quickReplyButton': []
-                                    }
-                                    textObj.text = dataArray[count];
-                                    textObj.cardAddButton = responseMessages[0].data.cardAddButton;
-                                    textObj.quickReplyButton = responseMessages[0].data.quickReplyButton;
-                                    var tempResponse = responseMessages[0];
-                                    tempResponse.data = textObj;
-                                    obj._id = idArray[count];
-                                    obj.message = tempResponse;
-                                    array.push(obj);
-                                }
-                                else {
-                                    obj._id = idArray[count];
-                                    obj.message = responseMessages[0];
-                                    array.push(obj);
-                                }
-                            }
-                            count = count + 1;
-                            if (count == i) {
-                                response.message = "Success";
-                                response.code = 200;
-                                response.data = array;
-                                res.json(response);
+                            else {
+                                responseArray.push(responseMessageData);
                             }
                         }
-                    });
-                }
-                console.log(idArray);
-            }
-            else {
+                        else {
+
+                            responseMessageData._id = bookmarkMessages[i]._id;
+                            responseArray.push(responseMessageData);
+                        }
+                    }
+
+                    console.log(responseArray);
+                    response.message = "Success";
+                    response.code = 200;
+                    response.data = responseArray;
+                    res.json(response);
+
+                });
+            } else {
                 response.message = "Success";
                 response.code = 200;
-                response.data = array;
+                response.data = responseArray;
                 res.json(response);
             }
         }
@@ -367,24 +419,31 @@ bookmarkMessageRoute.post(function (req, res) {
     var bookmarkMessage = new BookmarkMessages();
     var _userId = req.body._userId;
     var _messageId = req.body._messageId;
+    console.log(req.body.text);
+    var textType = undefined;
+    if (req.body.text !== undefined) {
+        textType = 'text';
+    }
     BookmarkMessages.find({ '_userId': _userId, '_messageId': _messageId, 'text': req.body.text }, null, { sort: { '_id': -1 } }, function (err, bookmarkMessages) {
         if (err) {
             res.send(err);
         }
         else {
             if (bookmarkMessages.length == 0) {
+                console.log(textType);
                 bookmarkMessage._userId = _userId;
                 bookmarkMessage._messageId = _messageId;
                 bookmarkMessage.createdOnUTC = date;
                 bookmarkMessage.updatedOnUTC = date;
                 bookmarkMessage.text = req.body.text;
-                bookmarkMessage.type = req.body.type;
+                bookmarkMessage.type = textType;
                 bookmarkMessage.isDeleted = false;
                 bookmarkMessage.save(function (err) {
                     if (err) {
 
                     }
                     else {
+                        console.log(bookmarkMessage);
                         response.message = "Success";
                         response.code = 200;
                         response.data = bookmarkMessage;

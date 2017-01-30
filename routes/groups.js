@@ -7,6 +7,8 @@ var Groups = require('./../models/Groups');
 var Block = require('./../models/Block');
 var Response = require('./../dto/APIResponse');
 var Promises = require('promise');
+var events = require('events');
+var EventEmitter = events.EventEmitter;
 //var GroupsBlock = require('./../dto/GroupsBlockDto');
 
 var fs = require('fs'),
@@ -21,6 +23,7 @@ var getAllGroupsRoute = router.route('/getAllGroups');
 var setOrderOfGroupsRoute = router.route('/setOrderOfGroups');
 var deleteOrderByIdRoute = router.route('/deleteOrderById/:orderId');
 var getGroupsBlocksRoute = router.route('/getGroupsBlocks/:type');
+var getGroupsBlocksRoute2 = router.route('/getGroupsBlocks2/:type');
 var utility = new UrlUtility(
     {
     });
@@ -34,7 +37,93 @@ mongoose.connect(url, function (err, db) {
         console.log("Successfully Connected");
     }
 });
+
 getGroupsBlocksRoute.get(function (req, res) {
+    var response = new Response();
+    var type = req.params.type;
+    var flowController = new EventEmitter();
+    var groupsArray = [];
+    var groupsBlockDto = {
+        'group': Groups,
+        'blocks': []
+    };
+    var array = [];
+    if (type == '-1') {
+        Groups.find({}, null, { sort: { 'order': -1 } }, function (err, groups) {
+            if (err) {
+                res.send(err);
+            }
+            else {
+                flowController.on('doWork', function (i) {
+                    if (i >= groups.length) {
+                        flowController.emit('finished');
+                        return;
+                    }
+                    groupsBlockDto = {
+                        'group': Groups,
+                        'blocks': []
+                    };
+                    Block.find({ _groupId: groups[i]._id }, function (err, blocks) {
+                        if (err) {
+                            res.send(err);
+                        }
+                        else {
+                            groupsBlockDto.group = groups[i];
+                            groupsBlockDto.blocks = blocks;
+                            array.push(groupsBlockDto);
+                            flowController.emit('doWork', i + 1);
+                        }
+                    });
+                });
+                flowController.emit('doWork', 0);
+                flowController.on('finished', function () {
+                    response.message = "Success";
+                    response.code = 200;
+                    response.data = array;
+                    res.json(response);
+                });
+            }
+        });
+    }
+    else {
+         Groups.find({'type': type}, null, { sort: { 'order': -1 } }, function (err, groups) {
+            if (err) {
+                res.send(err);
+            }
+            else {
+                flowController.on('doWork2', function (i) {
+                    if (i >= groups.length) {
+                        flowController.emit('finished2');
+                        return;
+                    }
+                    groupsBlockDto = {
+                        'group': Groups,
+                        'blocks': []
+                    };
+                    Block.find({ _groupId: groups[i]._id }, function (err, blocks) {
+                        if (err) {
+                            res.send(err);
+                        }
+                        else {
+                            groupsBlockDto.group = groups[i];
+                            groupsBlockDto.blocks = blocks;
+                            array.push(groupsBlockDto);
+                            flowController.emit('doWork2', i + 1);
+                        }
+                    });
+                });
+                flowController.emit('doWork2', 0);
+                flowController.on('finished2', function () {
+                    response.message = "Success";
+                    response.code = 200;
+                    response.data = array;
+                    res.json(response);
+                });
+            }
+        });
+    }
+});
+getGroupsBlocksRoute2.get(function (req, res) {
     var response = new Response();
     var type = req.params.type;
     // Save the beer and check for errors

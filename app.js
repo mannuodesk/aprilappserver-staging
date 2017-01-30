@@ -27,10 +27,12 @@ var usercode = require('./routes/usercode');
 var messages = require('./routes/messages');
 var directory = require('./routes/directory');
 var aboutapril = require('./routes/aboutapril');
+var faqs = require('./routes/faqs');
 var termsofservice = require('./routes/termsofservice');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var responsemessages = require('./routes/responsemessages');
+var responsemessagesroute = require('./routes/responsemessagesroute');
 var multer = require('multer');
 server.listen(process.env.PORT);
 //server.listen(80);
@@ -77,7 +79,8 @@ app.use('/auto', auto);
 app.use('/directory', directory);
 app.use('/aboutapril', aboutapril);
 app.use('/termsofservice', termsofservice);
-
+app.use('/faqs', faqs);
+app.use('/responsemessagesroute', responsemessagesroute);
 
 
 
@@ -199,77 +202,117 @@ io.sockets.on('connection', function (socket) {
                     var returnMessage = {
                         'messageText': UserText,
                         'messageTimeStamp': data.messageTimeStamp,
-                        'name':data.name,
+                        'name': data.name,
                         'conversationMessageId': conversationMessages._id
                     }
                     io.sockets["in"](socket.room).emit('UserMessage', returnMessage);
                     setTimeout(function () {
                         io.sockets["in"](socket.room).emit('typingstart', 'April App');
-
-                        Phrases.find({ phraseText: { $regex: ".*" + data.messageText + ".*" } }, function (err, phrases) {
+                        //$regex: ".*" + data.messageText + ".*" 
+                        Phrases.find({ phraseText: data.messageText }, function (err, phrases) {
                             if (err) {
                                 var res;
                                 res.send(err);
                             }
                             else {
                                 if (phrases.length != 0 && data.messageText != "") {
-                                    ResponseMessage.find({ _blockId: phrases[0]._phraseGroupId._blockId }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
-                                        if (err) {
-                                            res.send(err);
-                                        }
-                                        else {
-                                            if (responseMessages.length != 0) {
-                                                responseMessages.sort(function (a, b) {
-                                                    return a.order - b.order;
-                                                });
-                                                console.log(responseMessages)
-                                                setTimeout(function () {
-                                                    io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                                    var obj = {
-                                                        'conversationMessageId': '',
-                                                        'id': '',
-                                                        'type': '',
-                                                        'data': Object
-                                                    }
-                                                    for (var i = 0; i < responseMessages.length; i++) {
-                                                        obj = {
+                                    if (phrases[0]._phraseGroupId.phraseGroupType == 'block') {
+
+
+                                        ResponseMessage.find({ _blockId: phrases[0]._phraseGroupId._blockId }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
+                                            if (err) {
+                                                res.send(err);
+                                            }
+                                            else {
+                                                if (responseMessages.length != 0) {
+                                                    responseMessages.sort(function (a, b) {
+                                                        return a.order - b.order;
+                                                    });
+                                                    console.log(responseMessages)
+                                                    setTimeout(function () {
+                                                        io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                                        var obj = {
                                                             'conversationMessageId': '',
                                                             'id': '',
                                                             'type': '',
                                                             'data': Object
                                                         }
-                                                        obj.id = responseMessages[i]._id;
-                                                        obj.type = responseMessages[i].type;
-                                                        if (responseMessages[i].type == 'quickreply') {
-                                                            obj.data = responseMessages[i].data;
-                                                            BotSendingMessage(obj, data, date, -1);
-                                                            break;
-                                                        }
-                                                        if (responseMessages[i].type == 'text') {
-                                                            responseMessages[i].data.randomText.shift();
-                                                            var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
-                                                            textType = {
-                                                                'cardAddButton': responseMessages[i].data.cardAddButton,
-                                                                'quickReplyButton': responseMessages[i].data.quickReplyButton,
-                                                                'text': responseMessages[i].data.randomText[randomNumber].text
+                                                        for (var i = 0; i < responseMessages.length; i++) {
+                                                            if (responseMessages[i].isCompleted == true) {
+                                                                obj = {
+                                                                    'conversationMessageId': '',
+                                                                    'id': '',
+                                                                    'type': '',
+                                                                    'data': Object
+                                                                }
+                                                                obj.id = responseMessages[i]._id;
+                                                                obj.type = responseMessages[i].type;
+                                                                if (responseMessages[i].type == 'quickreply') {
+                                                                    obj.data = responseMessages[i].data;
+                                                                    BotSendingMessage(obj, data, date, -1);
+                                                                    break;
+                                                                }
+                                                                if (responseMessages[i].type == 'singletext') {
+                                                                    singletextType = {
+                                                                        'cardAddButton': responseMessages[i].data.cardAddButton,
+                                                                        'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                                                        'text': responseMessages[i].data.text
+                                                                    }
+                                                                    obj.type = 'text';
+                                                                    obj.data = singletextType;
+                                                                }
+                                                                if (responseMessages[i].type == 'text') {
+                                                                    responseMessages[i].data.randomText.shift();
+                                                                    var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                                                                    textType = {
+                                                                        'cardAddButton': responseMessages[i].data.cardAddButton,
+                                                                        'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                                                        'text': responseMessages[i].data.randomText[randomNumber].text
+                                                                    }
+                                                                    obj.data = textType;
+                                                                }
+                                                                else {
+                                                                    obj.data = responseMessages[i].data;
+                                                                }
+                                                                BotSendingMessage(obj, data, date, 0);
                                                             }
-                                                            obj.data = textType;
                                                         }
-                                                        else {
-                                                            obj.data = responseMessages[i].data;
-                                                        }
-                                                        BotSendingMessage(obj, data, date, 0);
-                                                    }
-                                                }, delay2);
+                                                    }, delay2);
 
 
+                                                }
+                                                else {
+                                                    io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                                    BotDefaultReply(data, date);
+                                                }
                                             }
-                                            else {
-                                                io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                                BotDefaultReply(data, date);
+                                        });
+                                    }
+                                    else {
+                                        if(phrases[0]._phraseGroupId.textArray.length != 0)
+                                        {
+                                            io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                            var randomNumber = Math.floor(Math.random() * phrases[0]._phraseGroupId.textArray.length);
+                                            var obj = {
+                                                'conversationMessageId': '',
+                                                'id': '',
+                                                'type': '',
+                                                'data': Object
                                             }
+                                            obj.type = 'text';
+                                            phraseGroupText = {
+                                                'cardAddButton': [],
+                                                'quickReplyButton': [],
+                                                'text': phrases[0]._phraseGroupId.textArray[randomNumber]
+                                            }
+                                            obj.data = phraseGroupText;
+                                            BotSendingMessage(obj, data, date, 0);
                                         }
-                                    });
+                                        else{
+                                            io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                            BotDefaultReply(data, date);
+                                        }
+                                    }
                                 }
                                 else {
                                     io.sockets["in"](socket.room).emit('typingend', 'April App');
@@ -299,7 +342,7 @@ io.sockets.on('connection', function (socket) {
                     var returnMessage = {
                         'messageText': UserText,
                         'messageTimeStamp': data.messageTimeStamp,
-                        'name':data.name,
+                        'name': data.name,
                         'conversationMessageId': conversationMessages._id
                     }
                     io.sockets["in"](socket.room).emit('UserMessage', returnMessage);
@@ -324,33 +367,44 @@ io.sockets.on('connection', function (socket) {
                                             'data': Object
                                         }
                                         for (var i = 0; i < responseMessages.length; i++) {
-                                            obj = {
-                                                'conversationMessageId': '',
-                                                'id': '',
-                                                'type': '',
-                                                'data': Object
-                                            }
-                                            obj.id = responseMessages[i]._id;
-                                            obj.type = responseMessages[i].type;
-                                            if (responseMessages[i].type == 'quickreply') {
-                                                obj.data = responseMessages[i].data;
-                                                BotSendingMessage(obj, data, date, -1);
-                                                break;
-                                            }
-                                            if (responseMessages[i].type == 'text') {
-                                                responseMessages[i].data.randomText.shift();
-                                                var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
-                                                textType = {
-                                                    'cardAddButton': responseMessages[i].data.cardAddButton,
-                                                    'quickReplyButton': responseMessages[i].data.quickReplyButton,
-                                                    'text': responseMessages[i].data.randomText[randomNumber].text
+                                            if (responseMessages[i].isCompleted == true) {
+                                                obj = {
+                                                    'conversationMessageId': '',
+                                                    'id': '',
+                                                    'type': '',
+                                                    'data': Object
                                                 }
-                                                obj.data = textType;
+                                                obj.id = responseMessages[i]._id;
+                                                obj.type = responseMessages[i].type;
+                                                if (responseMessages[i].type == 'quickreply') {
+                                                    obj.data = responseMessages[i].data;
+                                                    BotSendingMessage(obj, data, date, -1);
+                                                    break;
+                                                }
+                                                if (responseMessages[i].type == 'singletext') {
+                                                    singletextType = {
+                                                        'cardAddButton': responseMessages[i].data.cardAddButton,
+                                                        'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                                        'text': responseMessages[i].data.text
+                                                    }
+                                                    obj.type = 'text';
+                                                    obj.data = singletextType;
+                                                }
+                                                if (responseMessages[i].type == 'text') {
+                                                    responseMessages[i].data.randomText.shift();
+                                                    var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                                                    textType = {
+                                                        'cardAddButton': responseMessages[i].data.cardAddButton,
+                                                        'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                                        'text': responseMessages[i].data.randomText[randomNumber].text
+                                                    }
+                                                    obj.data = textType;
+                                                }
+                                                else {
+                                                    obj.data = responseMessages[i].data;
+                                                }
+                                                BotSendingMessage(obj, data, date, 0);
                                             }
-                                            else {
-                                                obj.data = responseMessages[i].data;
-                                            }
-                                            BotSendingMessage(obj, data, date, 0);
                                         }
                                     }, delay2);
                                 }

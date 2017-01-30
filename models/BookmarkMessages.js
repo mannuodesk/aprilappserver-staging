@@ -7,6 +7,7 @@ var BookmarkMessagesSchema   = new mongoose.Schema({
     _userId : { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     _messageId : { type: mongoose.Schema.Types.ObjectId, ref: 'ConversationMessages' },
     text:String,
+    type:String,
     createdOnUTC: Date,
     updatedOnUTC: Date,
     isDeleted: Boolean

@@ -71,7 +71,7 @@ uploadPictureRoute.post(multipartMiddleware, function (req, res) {
                             res.send(err);
                         else {
                             if (type == "image") {
-                                ResponseMessage.update({ _id: responseMessage._doc._id }, { 'data.pictureUrl': fullUrl + "/images/" + imageName }, {}, function (err, user) {
+                                ResponseMessage.update({ _id: responseMessage._doc._id }, { 'data.pictureUrl': fullUrl + "/images/" + imageName, 'isCompleted': true }, {}, function (err, user) {
                                     if (err) {
                                         res.json(err);
                                     }
@@ -85,17 +85,15 @@ uploadPictureRoute.post(multipartMiddleware, function (req, res) {
                             }
                             else {
                                 var galleryObj = {
-                                    'indexId':String,
-                                    'url':String,
-                                    'description':String,
-                                    'title':String,
-                                    'pictureUrl':String,
-                                    'cardAddButton':[]
+                                    'indexId': String,
+                                    'url': String,
+                                    'description': String,
+                                    'title': String,
+                                    'pictureUrl': String,
+                                    'cardAddButton': []
                                 }
-                                for(var i = 0; i < responseMessage.data.length;i++)
-                                {
-                                    if(responseMessage.data[i].indexId == indexId)
-                                    {
+                                for (var i = 0; i < responseMessage.data.length; i++) {
+                                    if (responseMessage.data[i].indexId == indexId) {
                                         galleryObj.indexId = responseMessage.data[i].indexId;
                                         galleryObj.cardAddButton = responseMessage.data[i].cardAddButton;
                                         galleryObj.url = responseMessage.data[i].url;
@@ -108,7 +106,7 @@ uploadPictureRoute.post(multipartMiddleware, function (req, res) {
                                 console.log(galleryObj);
                                 ResponseMessage.findByIdAndUpdate(
                                     responseMessageId,
-                                    { $pull: { 'data':{ indexId : indexId } } },
+                                    { $pull: { 'data': { indexId: indexId } } },
                                     { safe: true, upsert: true },
                                     function (err, model) {
                                         if (err)

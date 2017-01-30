@@ -17,6 +17,10 @@ var postPhraseGroupRoute = router.route('/addPhraseGroup');
 var getAllPhraseGroups = router.route('/getAllPhraseGroups');
 var updatePhraseGroup = router.route('/updatePhraseGroup');
 var deletePhraseGroup = router.route('/deletePhraseGroup/:_phraseGroupId');
+var addTextBoxPhraseGroup = router.route('/addTextBoxPhraseGroup/:_phraseGroupId');
+var editTextBoxPhraseGroup = router.route('/editTextBoxPhraseGroup/:_phraseGroupId/:indexId/:text');
+var deleteTextBoxPhraseGroup = router.route('/deleteTextBoxPhraseGroup/:_phraseGroupId/:indexId');
+var changePhraseGroupType = router.route('/changePhraseGroup/:_phraseGroupId/:type');
 var utility = new UrlUtility(
     {
     });
@@ -31,6 +35,77 @@ mongoose.connect(url, function (err, db) {
     else {
         console.log("Successfully Connected");
     }
+});
+deleteTextBoxPhraseGroup.get(function(req, res){
+    var response = new Response();
+    var phraseGroupId = req.params._phraseGroupId;
+    var indexId = req.params.indexId;
+    var phraseGroup = new PhraseGroup();
+    PhraseGroup.find({ '_id': req.params._phraseGroupId }, function (err, phraseGroup2) {
+        if (!phraseGroup2) {
+
+        }
+        else {
+            phraseGroup = phraseGroup2[0];
+            phraseGroup.textArray.splice(indexId, 1);
+            phraseGroup.markModified('anything');
+            phraseGroup.save(function (err) {
+                console.log(phraseGroup);
+                response.data = phraseGroup;
+                response.message = "Success";
+                response.code = 200;
+                res.json(response);
+            });
+        }
+    });
+});
+editTextBoxPhraseGroup.get(function (req, res) {
+    var response = new Response();
+    var phraseGroupId = req.params._phraseGroupId;
+    var indexId = req.params.indexId;
+    var text = req.params.text;
+    var phraseGroup = new PhraseGroup();
+    PhraseGroup.find({ '_id': req.params._phraseGroupId }, function (err, phraseGroup2) {
+        if (!phraseGroup2) {
+
+        }
+        else {
+            phraseGroup = phraseGroup2[0];
+            phraseGroup.textArray.set(indexId, text);
+            //phraseGroup.textArray[indexId] = text;
+            console.log(phraseGroup.textArray);
+            phraseGroup.markModified('anything');
+            phraseGroup.save(function (err) {
+                console.log(phraseGroup);
+                response.data = phraseGroup;
+                response.message = "Success";
+                response.code = 200;
+                res.json(response);
+            });
+        }
+    });
+});
+changePhraseGroupType.get(function(req, res){
+    var phraseGroupId = req.params._phraseGroupId;
+    var type = req.params.type;
+    var phraseGroup = new PhraseGroup();
+    var response = new Response();
+    PhraseGroup.find({ '_id': req.params._phraseGroupId }, function (err, phraseGroup2) {
+        if (!phraseGroup2) {
+
+        }
+        else {
+            phraseGroup = phraseGroup2[0];
+            console.log(type);
+            phraseGroup.phraseGroupType = type;
+            phraseGroup.save(function (err) {
+                response.data = phraseGroup;
+                response.message = "Success";
+                response.code = 200;
+                res.json(response);
+            });
+        }
+    });
 });
 deletePhraseGroup.get(function (req, res) {
     var response = new Response();
@@ -94,11 +169,34 @@ getAllPhraseGroups.get(function (req, res) {
         }
     });
 });
+addTextBoxPhraseGroup.get(function (req, res) {
+    var response = new Response();
+    var phraseGroupId = req.params._phraseGroupId;
+    var phraseGroup = new PhraseGroup();
+    var textArray = [];
+    PhraseGroup.find({ '_id': req.params._phraseGroupId }, function (err, phraseGroup2) {
+        if (!phraseGroup2) {
 
+        }
+        else {
+            textArray = phraseGroup2[0].textArray;
+            textArray.push('');
+            phraseGroup = phraseGroup2[0];
+            phraseGroup.textArray = textArray;
+            phraseGroup.save(function (err) {
+                response.data = phraseGroup;
+                response.message = "Success";
+                response.code = 200;
+                res.json(response);
+            });
+        }
+    });
+});
 postPhraseGroupRoute.post(function (req, res) {
     var phraseGroup = new PhraseGroup();
     var response = new Response();
     var date = new Date();
+    phraseGroup.phraseGroupType = 'block';
     phraseGroup.createdOnUTC = date;
     phraseGroup.updatedOnUTC = date;
     phraseGroup.isDeleted = false;

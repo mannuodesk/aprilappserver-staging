@@ -57,9 +57,52 @@ deleteRandomTitleRoute.get(function (req, res) {
                         if (err)
                             console.log(err);
                         else {
-                            response.message = "Success";
-                            response.code = 200;
-                            res.json(response);
+                            if (model.data.randomText.length <= 2) {
+                                model.isCompleted = false;
+                                model.save(function (err) {
+                                    response.message = "Success";
+                                    response.code = 200;
+                                    res.json(response);
+                                });
+                            }
+                            else {
+                                var flag = false;
+                                var count = 0;
+                                model.data.randomText.shift();
+                                for (var i = 1; i < model.data.randomText.length; i++) {
+                                    if (model.data.randomText[i].text == '') {
+                                        flag = true;
+                                        count = count + 1;
+                                    }
+                                }
+                                if (flag == false) {
+                                    model.isCompleted = true;
+                                    model.save(function (err) {
+                                        response.message = "Success";
+                                        response.code = 200;
+                                        res.json(response);
+                                    });
+                                }
+                                else {
+                                    if (count == 1) {
+                                        model.isCompleted = true;
+                                        model.save(function (err) {
+                                            response.message = "Success";
+                                            response.code = 200;
+                                            res.json(response);
+                                        });
+                                    }
+                                    else {
+                                        model.isCompleted = false;
+                                        model.save(function (err) {
+                                            response.message = "Success";
+                                            response.code = 200;
+                                            res.json(response);
+                                        });
+                                    }
+
+                                }
+                            }
                         }
                     });
             }
@@ -97,9 +140,38 @@ updateRandomTitleRoute.get(function (req, res) {
                                     if (err)
                                         console.log(err);
                                     else {
-                                        response.message = "Success";
-                                        response.code = 200;
-                                        res.json(response);
+                                        if (titleText != "" && model.data.randomText.length > 0) {
+                                            var flag = false;
+                                            for (var i = 1; i < model.data.randomText.length; i++) {
+                                                if (model.data.randomText[i].text == '') {
+                                                    flag = true;
+                                                }
+                                            }
+                                            if (flag == false) {
+                                                model.isCompleted = true;
+                                                model.save(function (err) {
+                                                    response.message = "Success";
+                                                    response.code = 200;
+                                                    res.json(response);
+                                                });
+                                            }
+                                            else {
+                                                model.isCompleted = false;
+                                                model.save(function (err) {
+                                                    response.message = "Success";
+                                                    response.code = 200;
+                                                    res.json(response);
+                                                });
+                                            }
+                                        }
+                                        else {
+                                            model.isCompleted = false;
+                                            model.save(function (err) {
+                                                response.message = "Success";
+                                                response.code = 200;
+                                                res.json(response);
+                                            });
+                                        }
                                     }
                                 }
                             );
@@ -125,9 +197,12 @@ addTextRandomRoute.get(function (req, res) {
             if (err)
                 console.log(err);
             else {
-                response.message = "Success";
-                response.code = 200;
-                res.json(response);
+                model.isCompleted = false;
+                model.save(function (err) {
+                    response.message = "Success";
+                    response.code = 200;
+                    res.json(response);
+                });
             }
         }
     );
@@ -212,9 +287,21 @@ deleteQuickReplyRoute.get(function (req, res) {
             if (err)
                 console.log(err);
             else {
-                response.message = "Success";
-                response.code = 200;
-                res.json(response);
+                console.log(model.data.quickReplyBtns);
+                if (model.data.quickReplyBtns.length == 0 || model.data.quickReplyBtns.length == 1) {
+                    console.log(model);
+                    model.isCompleted = false;
+                    model.save(function (err) {
+                        response.message = "Success";
+                        response.code = 200;
+                        res.json(response);
+                    });
+                }
+                else {
+                    response.message = "Success";
+                    response.code = 200;
+                    res.json(response);
+                }
             }
         }
     );
@@ -373,9 +460,20 @@ addQuickReplyRoute.get(function (req, res) {
             if (err)
                 console.log(err);
             else {
-                response.message = "Success";
-                response.code = 200;
-                res.json(response);
+                if (model.data.quickReplyBtns.length != 0) {
+                    console.log(model);
+                    model.isCompleted = true;
+                    model.save(function (err) {
+                        response.message = "Success";
+                        response.code = 200;
+                        res.json(response);
+                    });
+                }
+                else {
+                    response.message = "Success";
+                    response.code = 200;
+                    res.json(response);
+                }
             }
         }
     );
@@ -482,9 +580,16 @@ addGalleryCardRoute.post(function (req, res) {
             if (err)
                 console.log(err);
             else {
-                response.message = "Success";
-                response.code = 200;
-                res.json(response);
+                ResponseMessage.update({ _id: responseMessageId }, { 'isCompleted': false }, {}, function (err, user) {
+                    if (err) {
+                        res.json(err);
+                    }
+                    else {
+                        response.message = "Success";
+                        response.code = 200;
+                        res.json(response);
+                    }
+                });
             }
         }
     );
@@ -612,17 +717,37 @@ updateArticleRoute.post(function (req, res) {
     var articleText = req.body.text;
     console.log(articleText);
     var response = new Response();
-    ResponseMessage.update({ _id: responseMessageId }, { 'data.articleText': articleText }, {}, function (err, user) {
-        if (err) {
-            res.json(err);
-        }
-        else {
-            console.log(user);
-            response.message = "Success";
-            response.code = 200;
-            res.json(response);
-        }
-    });
+    ResponseMessage.findOne({ _id: responseMessageId }
+        , function (err, dumm) {
+            if (err)
+                res.send(err);
+            else {
+                if (articleText != "" && dumm.data.text != "") {
+                    ResponseMessage.update({ _id: responseMessageId }, { 'data.articleText': articleText, 'isCompleted': true }, {}, function (err, user) {
+                        if (err) {
+                            res.json(err);
+                        }
+                        else {
+                            response.message = "Success";
+                            response.code = 200;
+                            res.json(response);
+                        }
+                    });
+                }
+                else {
+                    ResponseMessage.update({ _id: responseMessageId }, { 'data.articleText': articleText, 'isCompleted': false }, {}, function (err, user) {
+                        if (err) {
+                            res.json(err);
+                        }
+                        else {
+                            response.message = "Success";
+                            response.code = 200;
+                            res.json(response);
+                        }
+                    });
+                }
+            }
+        });
 });
 updateTitleRoute.get(function (req, res) {
     var responseMessageId = req.params.responseMessageId;
@@ -644,6 +769,7 @@ updateTitleRoute.get(function (req, res) {
                         'pictureUrl': String,
                         'cardAddButton': []
                     }
+                    var flag = true;
                     for (var i = 0; i < responseMessage.data.length; i++) {
                         if (responseMessage.data[i].indexId == indexId) {
                             galleryObj.indexId = responseMessage.data[i].indexId;
@@ -655,6 +781,14 @@ updateTitleRoute.get(function (req, res) {
                             break;
                         }
                     }
+                    /*for (var i = 0; i < responseMessage.data.length; i++) {
+                        if (responseMessage.data[i].title == '' && titleText) {
+                            flag = false;
+                        }
+                        if (responseMessage.data[i].title == '' && responseMessage.data.length == 1) {
+                            flag = true;
+                        }
+                    }*/
                     galleryObj.title = titleText;
                     console.log(galleryObj);
                     ResponseMessage.findByIdAndUpdate(
@@ -673,9 +807,17 @@ updateTitleRoute.get(function (req, res) {
                                         if (err)
                                             console.log(err);
                                         else {
-                                            response.message = "Success";
-                                            response.code = 200;
-                                            res.json(response);
+                                            ResponseMessage.update({ _id: responseMessageId }, { 'isCompleted': flag }, {}, function (err, user) {
+                                                if (err) {
+                                                    res.json(err);
+                                                }
+                                                else {
+                                                    response.message = "Success";
+                                                    response.code = 200;
+                                                    res.json(response);
+                                                }
+                                            });
+
                                         }
                                     }
                                 );
@@ -683,16 +825,46 @@ updateTitleRoute.get(function (req, res) {
                         }
                     );
                 }
+                else if (type == 'article') {
+                    if (titleText != "" && responseMessage.data.articleText != "") {
+                        ResponseMessage.update({ _id: responseMessage._doc._id }, { 'data.text': titleText, 'isCompleted': true }, {}, function (err, user) {
+                            if (err) {
+                                res.json(err);
+                            }
+                            else {
+                                response.message = "Success";
+                                response.code = 200;
+                                res.json(response);
+
+                            }
+                        });
+                    }
+                    else {
+                        ResponseMessage.update({ _id: responseMessage._doc._id }, { 'data.text': titleText, 'isCompleted': false }, {}, function (err, user) {
+                            if (err) {
+                                res.json(err);
+                            }
+                            else {
+                                response.message = "Success";
+                                response.code = 200;
+                                res.json(response);
+
+                            }
+                        });
+                    }
+
+                }
                 else {
-                    ResponseMessage.update({ _id: responseMessage._doc._id }, { 'data.text': titleText }, {}, function (err, user) {
+                    ResponseMessage.update({ _id: responseMessage._id }, { 'data.text': titleText, isCompleted:true }, {}, function (err, user) {
                         if (err) {
                             res.json(err);
                         }
                         else {
-                            response.message = "Success";
-                            response.code = 200;
-                            res.json(response);
-                        }
+                            
+                                response.message = "Success";
+                                response.code = 200;
+                                res.json(response);
+                                                    }
                     });
                 }
             }
@@ -737,6 +909,7 @@ postResponseMessageRoute.post(function (req, res) {
             responseMessage.updatedOnUTC = date;
             responseMessage.isDeleted = false;
             responseMessage.order = order + 1;
+            responseMessage.isCompleted = false;
             // Save the beer and check for errors
             responseMessage.save(function (err) {
                 if (err) {

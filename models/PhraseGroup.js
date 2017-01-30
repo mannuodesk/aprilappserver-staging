@@ -4,6 +4,8 @@ var Block = require('./Block');
 // Define our beer schema
 var PhraseGroupSchema   = new mongoose.Schema({
     _blockId : { type: mongoose.Schema.Types.ObjectId, ref: 'Block' },
+    phraseGroupType : String,
+    textArray : [],
     createdOnUTC: Date,
     updatedOnUTC: Date,
     isDeleted: Boolean

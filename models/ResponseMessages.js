@@ -7,6 +7,7 @@ var ResponseMessagesSchema   = new mongoose.Schema({
     type: String,
     _blockId: { type: mongoose.Schema.Types.ObjectId, ref: 'Block' },
     order:Number,
+    isCompleted:Boolean,
     createdOnUTC: Date,
     updatedOnUTC: Date,
     isDeleted: Boolean
