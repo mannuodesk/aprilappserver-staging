@@ -5,7 +5,7 @@ var ResponseMessage = require('./../models/ResponseMessages');
 var UrlUtility = require('./../Utility/UrlUtility');
 var Response = require('./../dto/APIResponse');
 
-var editQuickReplyRoute = router.route('/editQuickReply/:buttonName/:responseMessageId/:_quickReplyId');
+var editQuickReplyRoute = router.route('/editQuickReply/:buttonName/:_blockId/:responseMessageId/:_quickReplyId');
 var editTextCardAddBtnRoute = router.route('/editTextCardAddBtn');
 var editGalleryCardAddBtnRoute = router.route('/editGalleryCardAddBtn');
 var utility = new UrlUtility(
@@ -26,6 +26,7 @@ editGalleryCardAddBtnRoute.post(function(req, res){
     var object = req.body.object;
     var type = req.body.type;
     var cardId = req.body.cardId;
+    
     if (type == 'url') {
         object._blockId = '';
     }
@@ -153,6 +154,7 @@ editQuickReplyRoute.get(function (req, res) {
     var btnName = req.params.buttonName;
     var responseMessageId = req.params.responseMessageId;
     var quickReplyId = req.params._quickReplyId;
+    var _blockId = req.params._blockId;
     var response = new Response;
     var responseMessageUpdate = new ResponseMessage();
     ResponseMessage.findOne({ _id: responseMessageId }
@@ -164,7 +166,8 @@ editQuickReplyRoute.get(function (req, res) {
                     { _id: responseMessageId, 'data.quickReplyBtns._addButtonId': quickReplyId },
                     {
                         '$set': {
-                            'data.quickReplyBtns.$.buttonname': btnName
+                            'data.quickReplyBtns.$.buttonname': btnName,
+                            'data.quickReplyBtns.$._blockId': _blockId,
                         }
                     },
                     function (err, numAffected) {

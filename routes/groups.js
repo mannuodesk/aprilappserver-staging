@@ -24,6 +24,7 @@ var setOrderOfGroupsRoute = router.route('/setOrderOfGroups');
 var deleteOrderByIdRoute = router.route('/deleteOrderById/:orderId');
 var getGroupsBlocksRoute = router.route('/getGroupsBlocks/:type');
 var getGroupsBlocksRoute2 = router.route('/getGroupsBlocks2/:type');
+var updateGroupNameRoute = router.route('/updateGroupName/:groupId/:groupName');
 var utility = new UrlUtility(
     {
     });
@@ -37,7 +38,26 @@ mongoose.connect(url, function (err, db) {
         console.log("Successfully Connected");
     }
 });
-
+updateGroupNameRoute.get(function (req, res) {
+    var response = new Response();
+    var _groupId = req.params.groupId;
+    var groupName = req.params.groupName;
+    Groups.findOne({ _id: req.params.groupId })
+        .exec(function (err, group) {
+            if (err)
+                res.send(err);
+            else {
+                 group.name = groupName;
+                    group.markModified('anything');
+                    group.save(function (err) {
+                        response.message = "Success";
+                        response.code = 200;
+                        response.data = group;
+                        res.json(response);
+                    });
+            }
+        });
+});
 getGroupsBlocksRoute.get(function (req, res) {
     var response = new Response();
     var type = req.params.type;
