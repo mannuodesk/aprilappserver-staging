@@ -26,8 +26,9 @@ var addTextRandomRoute = router.route('/addTextRandom/:responseMessageId/:count'
 var deleteGalleryCardRoute = router.route('/deleteGalleryCard/:responseMessageId/:galleryCardId');
 var addQuickReplyRoute = router.route('/addQuickReply/:responseMessageId/:buttonName/:_blockId/:count');
 var sortingOfResponseMessagesRoute = router.route('/sortingOfResponseMessages');
-var updateRandomTitleRoute = router.route('/updateRandomTitle/:responseMessageId/:indexId/:titleText');
+var updateRandomTitleRoute = router.route('/updateRandomTitle');
 var deleteRandomTitleRoute = router.route('/deleteRandomText/:responseMessageId/:indexId');
+var deleteOneGalleryCardRoute = router.route('/deleteOneGalleryCard/:responseMessageId/:indexId');
 var utility = new UrlUtility(
     {
     });
@@ -40,6 +41,42 @@ mongoose.connect(url, function (err, db) {
         console.log("Successfully Connected");
     }
 });
+deleteOneGalleryCardRoute.get(function (req, res) {
+    var response = new Response();
+    ResponseMessage.findByIdAndUpdate(
+        req.params.responseMessageId,
+        { $pull: { 'data': { indexId: req.params.indexId } } },
+        { safe: true, upsert: true },
+        function (err, model) {
+            if (err)
+                console.log(err);
+            else {
+                var flag = true;
+                for(var i = 0; i< model.data.length;i++){
+                    if(model.data[i].indexId != req.params.indexId){
+                        if(model.data[i].title == ""){
+                        flag = false;
+                        break;
+                        }
+                        else{
+                            flag = true;
+                        }
+                    }
+                }
+                if(model.data.length == 0 || model.data.length == 1){
+                    flag = false;
+                }
+                model.isCompleted = flag;
+                model.markModified('anything');
+                model.save(function(err){
+                    response.message = "Success";
+                    response.code = 200;
+                    res.json(response);
+                });
+                
+            }
+        });
+})
 deleteRandomTitleRoute.get(function (req, res) {
     var responseMessageId = req.params.responseMessageId;
     var indexId = req.params.indexId;
@@ -108,10 +145,10 @@ deleteRandomTitleRoute.get(function (req, res) {
             }
         });
 });
-updateRandomTitleRoute.get(function (req, res) {
-    var responseMessageId = req.params.responseMessageId;
-    var indexId = req.params.indexId;
-    var titleText = req.params.titleText;
+updateRandomTitleRoute.post(function (req, res) {
+    var responseMessageId = req.body.responseMessageId;
+    var indexId = req.body.indexId;
+    var titleText = req.body.titleText;
     console.log(titleText);
     var response = new Response();
     ResponseMessage.findOne({ _id: responseMessageId }
@@ -119,7 +156,49 @@ updateRandomTitleRoute.get(function (req, res) {
             if (err)
                 res.send(err);
             else {
-                console.log(responseMessage.data.randomText);
+                for (var i = 0; i < responseMessage.data.randomText.length; i++) {
+                    if (responseMessage.data.randomText[i].indexId == indexId) {
+                        responseMessage.data.randomText[i].text = titleText;
+                    }
+                }
+                responseMessage.markModified('data.randomText');
+                responseMessage.save(function (err, model) {
+                    if (titleText != "" && model.data.randomText.length > 0) {
+                        var flag = false;
+                        for (var i = 1; i < model.data.randomText.length; i++) {
+                            if (model.data.randomText[i].text == '') {
+                                flag = true;
+                            }
+                        }
+                        if (flag == false) {
+                            model.isCompleted = true;
+                            model.save(function (err) {
+                                response.message = "Success";
+                                response.code = 200;
+                                res.json(response);
+                            });
+                        }
+                        else {
+                            model.isCompleted = false;
+                            model.save(function (err) {
+                                response.message = "Success";
+                                response.code = 200;
+                                res.json(response);
+                            });
+                        }
+                    }
+                    else {
+                        model.isCompleted = false;
+                        model.save(function (err) {
+                            response.message = "Success";
+                            response.code = 200;
+                            res.json(response);
+                        });
+                    }
+                    console.log(model.data.randomText);
+                });
+                //responseMessage.data.randomText.set(indexId, text);
+                /*console.log(responseMessage.data.randomText);
                 ResponseMessage.findByIdAndUpdate(
                     responseMessageId,
                     { $pull: { 'data.randomText': { indexId: indexId } } },
@@ -176,7 +255,7 @@ updateRandomTitleRoute.get(function (req, res) {
                                 }
                             );
                         }
-                    });
+                    });*/
             }
         });
 });
@@ -855,16 +934,16 @@ updateTitleRoute.get(function (req, res) {
 
                 }
                 else {
-                    ResponseMessage.update({ _id: responseMessage._id }, { 'data.text': titleText, isCompleted:true }, {}, function (err, user) {
+                    ResponseMessage.update({ _id: responseMessage._id }, { 'data.text': titleText, isCompleted: true }, {}, function (err, user) {
                         if (err) {
                             res.json(err);
                         }
                         else {
-                            
-                                response.message = "Success";
-                                response.code = 200;
-                                res.json(response);
-                                                    }
+
+                            response.message = "Success";
+                            response.code = 200;
+                            res.json(response);
+                        }
                     });
                 }
             }

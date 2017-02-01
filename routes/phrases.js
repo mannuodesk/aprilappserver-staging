@@ -6,7 +6,8 @@ var UrlUtility = require('./../Utility/UrlUtility');
 var Response = require('./../dto/APIResponse');
 var PhraseGroup = require('./../models/PhraseGroup');
 var Block = require('./../models/Block');
-
+var events = require('events');
+var EventEmitter = events.EventEmitter;
 //GET home page. 
 router.get('/', function (req, res, next) {
     res.render('index', { title: 'Express' });
@@ -15,6 +16,7 @@ router.get('/', function (req, res, next) {
 var postPhrasesRoute = router.route('/addPhrase');
 var getAllPhrasesRoute = router.route('/getAllphrases');
 var deletePhrasesRoute = router.route('/deletePhrases/:_phraseId');
+var updatePhraseRoute = router.route('/updatePhrase')
 var utility = new UrlUtility(
     {
     });
@@ -43,6 +45,38 @@ deletePhrasesRoute.get(function (req, res) {
             }
         });
 });
+updatePhraseRoute.post(function (req, res) {
+    // Create a new instance of the Beer model
+    var response = new Response();
+    var date = new Date();
+    // Set the beer properties that came from the POST data
+
+    Phrases.findOne({ _id: req.body.phraseId })
+        .exec(function (err, phrases) {
+            if (err)
+                res.send(err);
+            else {
+                var phrase = req.body.phraseText;
+                phrase = phrase.replace(/[^a-zA-Z ]/g, "");
+                phrases.phraseText = phrase.toLowerCase();
+                phrases.phrase = req.body.phraseText;
+                console.log(phrases);
+                // Save the beer and check for errors
+                phrases.save(function (err) {
+                    if (err) {
+                        res.send(err);
+                    }
+                    else {
+                        response.data = phrases;
+                        response.message = "Success";
+                        response.code = 200;
+                        res.json(response);
+                        console.log('done');
+                    }
+                });
+            }
+        });
+});
 postPhrasesRoute.post(function (req, res) {
     // Create a new instance of the Beer model
     var phrases = new Phrases();
@@ -52,7 +86,7 @@ postPhrasesRoute.post(function (req, res) {
     var phrase = req.body.phraseText;
     phrase = phrase.replace(/[^a-zA-Z ]/g, "");
     phrases.phraseText = phrase.toLowerCase();
-    
+
     phrases.phrase = req.body.phraseText;
     phrases._phraseGroupId = req.body._phraseGroupId;
     phrases.createdOnUTC = date;
@@ -77,6 +111,7 @@ postPhrasesRoute.post(function (req, res) {
 getAllPhrasesRoute.get(function (req, res) {
     // Create a new instance of the Beer model
     var response = new Response();
+    var flowController = new EventEmitter();
     var groupsArray = [];
     var array = [];
     var groupsBlockDto = {
@@ -89,7 +124,16 @@ getAllPhrasesRoute.get(function (req, res) {
             res.send(err);
         }
         else {
-            for (var i = 0; i < PhraseGroups.length; i++) {
+            if (PhraseGroups.length == 0) {
+                response.message = "Failure";
+                response.code = 400;
+                res.json(response);
+            }
+            flowController.on('doWork', function (i) {
+                if (i >= PhraseGroups.length) {
+                    flowController.emit('finished');
+                    return;
+                }
                 groupsBlockDto = {
                     'phraseGroup': PhraseGroup,
                     'phrases': [],
@@ -98,8 +142,7 @@ getAllPhrasesRoute.get(function (req, res) {
                 groupsBlockDto.phraseGroup = PhraseGroups[i];
                 var phraseGroupsId = PhraseGroups[i]._id;
                 console.log(phraseGroupsId);
-                var counter = 0;
-                array.push(groupsBlockDto);
+                
                 Phrases.find({ _phraseGroupId: phraseGroupsId }, function (err, phrases) {
                     if (err) {
                         res.send(err);
@@ -107,27 +150,25 @@ getAllPhrasesRoute.get(function (req, res) {
                     else {
                         console.log(phrases);
                         if (phrases.length != 0) {
-                            array[counter].phrases = phrases;
+                            groupsBlockDto.phrases = phrases;
                         }
                         else {
-                            array[counter].phrases = [];
+                            groupsBlockDto.phrases = [];
                         }
-                        counter = counter + 1;
-                        if (counter == i) {
-                            response.message = "Success";
-                            response.code = 200;
-                            response.data = array;
-                            res.json(response);
-                        }
+                        array.push(groupsBlockDto);
+                        flowController.emit('doWork', i + 1);
                     }
                 });
 
-            }
-            if (PhraseGroups.length == 0) {
-                response.message = "Failure";
-                response.code = 400;
+            });
+            flowController.emit('doWork', 0);
+            flowController.on('finished', function () {
+                response.message = "Success";
+                response.code = 200;
+                response.data = array;
                 res.json(response);
-            }
+            });
+
         }
     }).populate('_blockId');;
 });

@@ -111,7 +111,7 @@ deletDirectoryRoute.get(function (req, res) {
 });
 getAllDirectoryRoute.get(function (req, res) {
     var response = new Response();
-    Directory.find({}, null, {}, function (err, directories) {
+    Directory.find({}, null, {sort:'title'}, function (err, directories) {
         if (err) {
             res.send(err);
         }
