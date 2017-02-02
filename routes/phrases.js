@@ -170,6 +170,6 @@ getAllPhrasesRoute.get(function (req, res) {
             });
 
         }
-    }).populate('_blockId');;
+    });
 });
 module.exports = router;
