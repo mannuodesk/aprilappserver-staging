@@ -4,6 +4,7 @@ var mongoose = require('mongoose');
 var ResponseMessage = require('./../models/ResponseMessages');
 var UrlUtility = require('./../Utility/UrlUtility');
 var Response = require('./../dto/APIResponse');
+var Block = require('./../models/Block');
 
 //GET home page. 
 router.get('/', function (req, res, next) {
@@ -52,28 +53,29 @@ deleteOneGalleryCardRoute.get(function (req, res) {
                 console.log(err);
             else {
                 var flag = true;
-                for(var i = 0; i< model.data.length;i++){
-                    if(model.data[i].indexId != req.params.indexId){
-                        if(model.data[i].title == ""){
-                        flag = false;
-                        break;
+                for (var i = 0; i < model.data.length; i++) {
+                    if (model.data[i].indexId != req.params.indexId) {
+                        if (model.data[i].title == "") {
+                            flag = false;
+                            break;
                         }
-                        else{
+                        else {
                             flag = true;
                         }
                     }
                 }
-                if(model.data.length == 0 || model.data.length == 1){
+                if (model.data.length == 0 || model.data.length == 1) {
                     flag = false;
                 }
                 model.isCompleted = flag;
                 model.markModified('anything');
-                model.save(function(err){
+                model.save(function (err) {
+                    updateBlockStatusIsCompleted(model._blockId);
+                    response.data = flag;
                     response.message = "Success";
                     response.code = 200;
                     res.json(response);
                 });
-                
             }
         });
 })
@@ -115,6 +117,8 @@ deleteRandomTitleRoute.get(function (req, res) {
                                 if (flag == false) {
                                     model.isCompleted = true;
                                     model.save(function (err) {
+                                        updateBlockStatusIsCompleted(model._blockId);
+                                        response.data = true;
                                         response.message = "Success";
                                         response.code = 200;
                                         res.json(response);
@@ -124,6 +128,8 @@ deleteRandomTitleRoute.get(function (req, res) {
                                     if (count == 1) {
                                         model.isCompleted = true;
                                         model.save(function (err) {
+                                            updateBlockStatusIsCompleted(model._blockId);
+                                            response.data = true;
                                             response.message = "Success";
                                             response.code = 200;
                                             res.json(response);
@@ -173,6 +179,8 @@ updateRandomTitleRoute.post(function (req, res) {
                         if (flag == false) {
                             model.isCompleted = true;
                             model.save(function (err) {
+                                updateBlockStatusIsCompleted(model._blockId);
+                                response.data = true;
                                 response.message = "Success";
                                 response.code = 200;
                                 res.json(response);
@@ -278,6 +286,8 @@ addTextRandomRoute.get(function (req, res) {
             else {
                 model.isCompleted = false;
                 model.save(function (err) {
+                    updateBlockStatusIsCompleted(model._blockId);
+                    response.data = true;
                     response.message = "Success";
                     response.code = 200;
                     res.json(response);
@@ -371,6 +381,7 @@ deleteQuickReplyRoute.get(function (req, res) {
                     console.log(model);
                     model.isCompleted = false;
                     model.save(function (err) {
+                        updateBlockStatusIsCompleted(model._blockId);
                         response.message = "Success";
                         response.code = 200;
                         res.json(response);
@@ -476,6 +487,8 @@ deleteResponseMessageRoute.get(function (req, res) {
             if (err)
                 res.send(err);
             else {
+                var statusFlag = true;
+                var _blockId = responseMessage._blockId;
                 responseMessage.remove();
                 ResponseMessage.find({ '_blockId': responseMessage._blockId }, null, { sort: { 'order': 'ascending' } }, function (err, groups) {
                     if (err) {
@@ -500,7 +513,14 @@ deleteResponseMessageRoute.get(function (req, res) {
                                         }
                                     })
                                 }
+                                if (groups[i].isCompleted == true && statusFlag == true) {
+                                    statusFlag = true;
+                                }
+                                else {
+                                    statusFlag = false;
+                                }
                                 if (i == count) {
+                                    updateBlockStatusIsCompleted(responseMessage._blockId);
                                     response.message = "Success";
                                     response.code = 200;
                                     response.data = responseMessage;
@@ -509,6 +529,7 @@ deleteResponseMessageRoute.get(function (req, res) {
                             }
                         }
                         else {
+                            updateBlockStatusIsCompleted(responseMessage._blockId);
                             response.message = "No Response Message Exists";
                             response.code = 400;
                             response.data = null;
@@ -539,20 +560,21 @@ addQuickReplyRoute.get(function (req, res) {
             if (err)
                 console.log(err);
             else {
-                if (model.data.quickReplyBtns.length != 0) {
-                    console.log(model);
-                    model.isCompleted = true;
-                    model.save(function (err) {
-                        response.message = "Success";
-                        response.code = 200;
-                        res.json(response);
-                    });
-                }
+                //if (model.data.quickReplyBtns.length != 0) {
+                console.log(model);
+                model.isCompleted = true;
+                model.save(function (err) {
+                    updateBlockStatusIsCompleted(model._blockId);
+                    response.message = "Success";
+                    response.code = 200;
+                    res.json(response);
+                });
+                /*}
                 else {
                     response.message = "Success";
                     response.code = 200;
                     res.json(response);
-                }
+                }*/
             }
         }
     );
@@ -664,6 +686,8 @@ addGalleryCardRoute.post(function (req, res) {
                         res.json(err);
                     }
                     else {
+                        updateBlockStatusIsCompleted(model._blockId);
+                        response.data = false;
                         response.message = "Success";
                         response.code = 200;
                         res.json(response);
@@ -801,12 +825,14 @@ updateArticleRoute.post(function (req, res) {
             if (err)
                 res.send(err);
             else {
-                if (articleText != "" && dumm.data.text != "") {
+                if (articleText != "" && dumm.data.text !== undefined) {
                     ResponseMessage.update({ _id: responseMessageId }, { 'data.articleText': articleText, 'isCompleted': true }, {}, function (err, user) {
                         if (err) {
                             res.json(err);
                         }
                         else {
+                            updateBlockStatusIsCompleted(dumm._blockId);
+                            response.data = true;
                             response.message = "Success";
                             response.code = 200;
                             res.json(response);
@@ -819,6 +845,7 @@ updateArticleRoute.post(function (req, res) {
                             res.json(err);
                         }
                         else {
+                            response.data = false;
                             response.message = "Success";
                             response.code = 200;
                             res.json(response);
@@ -857,18 +884,16 @@ updateTitleRoute.get(function (req, res) {
                             galleryObj.description = responseMessage.data[i].description;
                             galleryObj.title = responseMessage.data[i].title;
                             galleryObj.pictureUrl = responseMessage.data[i].pictureUrl;
+                            responseMessage.data[i].title = titleText;
                             break;
                         }
                     }
-                    /*for (var i = 0; i < responseMessage.data.length; i++) {
-                        if (responseMessage.data[i].title == '' && titleText) {
+                    galleryObj.title = titleText;
+                    for (var i = 0; i < responseMessage.data.length; i++) {
+                        if (responseMessage.data[i].title == '') {
                             flag = false;
                         }
-                        if (responseMessage.data[i].title == '' && responseMessage.data.length == 1) {
-                            flag = true;
-                        }
-                    }*/
-                    galleryObj.title = titleText;
+                    }
                     console.log(galleryObj);
                     ResponseMessage.findByIdAndUpdate(
                         responseMessage._id,
@@ -886,17 +911,32 @@ updateTitleRoute.get(function (req, res) {
                                         if (err)
                                             console.log(err);
                                         else {
-                                            ResponseMessage.update({ _id: responseMessageId }, { 'isCompleted': flag }, {}, function (err, user) {
-                                                if (err) {
-                                                    res.json(err);
-                                                }
-                                                else {
-                                                    response.message = "Success";
-                                                    response.code = 200;
-                                                    res.json(response);
-                                                }
-                                            });
-
+                                            if (flag == true) {
+                                                ResponseMessage.update({ _id: responseMessageId }, { 'isCompleted': flag }, {}, function (err, user) {
+                                                    if (err) {
+                                                        res.json(err);
+                                                    }
+                                                    else {
+                                                        updateBlockStatusIsCompleted(responseMessage._blockId);
+                                                        response.data = flag;
+                                                        response.message = "Success";
+                                                        response.code = 200;
+                                                        res.json(response);
+                                                    }
+                                                });
+                                            } else {
+                                                ResponseMessage.update({ _id: responseMessageId }, { 'isCompleted': flag }, {}, function (err, user) {
+                                                    if (err) {
+                                                        res.json(err);
+                                                    }
+                                                    else {
+                                                        response.data = flag;
+                                                        response.message = "Success";
+                                                        response.code = 200;
+                                                        res.json(response);
+                                                    }
+                                                });
+                                            }
                                         }
                                     }
                                 );
@@ -911,6 +951,8 @@ updateTitleRoute.get(function (req, res) {
                                 res.json(err);
                             }
                             else {
+                                updateBlockStatusIsCompleted(responseMessage._blockId);
+                                response.data = true;
                                 response.message = "Success";
                                 response.code = 200;
                                 res.json(response);
@@ -924,6 +966,7 @@ updateTitleRoute.get(function (req, res) {
                                 res.json(err);
                             }
                             else {
+                                response.data = false;
                                 response.message = "Success";
                                 response.code = 200;
                                 res.json(response);
@@ -939,7 +982,7 @@ updateTitleRoute.get(function (req, res) {
                             res.json(err);
                         }
                         else {
-
+                            updateBlockStatusIsCompleted(responseMessage._blockId);
                             response.message = "Success";
                             response.code = 200;
                             res.json(response);
@@ -1014,6 +1057,7 @@ postResponseMessageRoute.post(function (req, res) {
                                             if (err)
                                                 console.log(err);
                                             else {
+                                                setBlockCompletion(responseMessage._blockId, false)
                                                 response.data = responseMessage;
                                                 response.message = "Success: New Created";
                                                 response.code = 200;
@@ -1026,6 +1070,7 @@ postResponseMessageRoute.post(function (req, res) {
                         );
                     }
                     else {
+                        setBlockCompletion(responseMessage._blockId, false)
                         response.data = responseMessage;
                         response.message = "Success: New Created";
                         response.code = 200;
@@ -1053,4 +1098,46 @@ getAllResponseMessagesRoute.get(function (req, res) {
         }
     });
 });
+function updateBlockStatusIsCompleted(_blockId) {
+    var count = 0;
+    ResponseMessage.find({ _blockId: _blockId }
+        , function (err, responseMessage) {
+            if (err)
+                res.send(err);
+            else {
+                if (responseMessage.length != 0) {
+                    for (var i = 0; i < responseMessage.length; i++) {
+                        if (responseMessage[i].isCompleted == true) {
+                            count = count + 1;
+                        }
+                        else {
+                            setBlockCompletion(responseMessage[i]._blockId, false);
+                            break;
+                        }
+                    }
+                    if (responseMessage.length == count) {
+                        setBlockCompletion(_blockId, true);
+                    }
+                }
+
+
+                else {
+                    setBlockCompletion(_blockId, true);
+                }
+            }
+        });
+}
+function setBlockCompletion(_blockId, status) {
+    Block.findByIdAndUpdate(
+        _blockId,
+        { 'isCompleted': status },
+        { safe: true, upsert: true },
+        function (err, model) {
+            if (err)
+                console.log(err);
+            else {
+                console.log(model);
+            }
+        });
+}
 module.exports = router;

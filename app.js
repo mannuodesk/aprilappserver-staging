@@ -35,8 +35,8 @@ var bodyParser = require('body-parser');
 var responsemessages = require('./routes/responsemessages');
 var responsemessagesroute = require('./routes/responsemessagesroute');
 var multer = require('multer');
-//server.listen(process.env.PORT);
-server.listen(80);
+server.listen(process.env.PORT);
+//server.listen(80);
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', function (req, res) {
     res.sendfile(__dirname + '/index.html');
@@ -453,7 +453,10 @@ io.sockets.on('connection', function (socket) {
                                         //flowController.emit('multipleblockdoWork', b + 1);
 
                                     }
-
+                                    else{
+                                         io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                            BotDefaultReply(data, date);
+                                    }
                                     /*if (phraseGroupObj._blockId.length == counter) {
                                         BotSendingMessageArray(responseMessageArray, data);
                                     }*/
@@ -576,7 +579,7 @@ io.sockets.on('connection', function (socket) {
     function BotDefaultReply(data, date) {
         var array = [];
         date = new Date();
-        ResponseMessage.find({ _blockId: '586ea566085bbe2f4ca49d8d' }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
+        ResponseMessage.find({ _blockId: '585d21b25463e4270c565639' }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
             if (err) {
                 res.send(err);
             }
@@ -619,7 +622,7 @@ io.sockets.on('connection', function (socket) {
     }
     function BotWelcomeMessage(data, date) {
         date = new Date();
-        ResponseMessage.find({ _blockId: '586ea566085bbe2f4ca49d8b' }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
+        ResponseMessage.find({ _blockId: '586ea566085bbe2f4ca49d8c' }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
             if (err) {
                 res.send(err);
             }

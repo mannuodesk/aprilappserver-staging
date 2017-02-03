@@ -120,6 +120,7 @@ postBlockRoute.post(function (req, res) {
     block.updatedOnUTC = date;
     block.isDeleted = false;
     block.isLocked = false;
+    block.isCompleted = true;
     block._groupId = req.body._groupId;
     console.log(block);
     // Save the beer and check for errors

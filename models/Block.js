@@ -11,6 +11,7 @@ var BlockSchema   = new mongoose.Schema({
     updatedOnUTC: Date,
     isDeleted: Boolean,
     isLocked:Boolean,
+    isCompleted:Boolean,
     _groupId : { type: mongoose.Schema.Types.ObjectId, ref: 'Groups' }
 });
 

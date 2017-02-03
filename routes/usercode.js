@@ -11,6 +11,7 @@ var multipart = require('connect-multiparty');
 var fs = require("fs");
 var ResponseMessage = require('./../models/ResponseMessages');
 var uuid = require('node-uuid');
+var Block = require('./../models/Block');
 var multipartMiddleware = multipart();
 
 var transporter = nodemailer.createTransport({
@@ -76,6 +77,7 @@ uploadPictureRoute.post(multipartMiddleware, function (req, res) {
                                         res.json(err);
                                     }
                                     else {
+                                        updateBlockStatusIsCompleted(responseMessage._doc._blockId);
                                         response.data = fullUrl + "/images/" + imageName;
                                         response.message = "Success";
                                         response.code = 200;
@@ -139,6 +141,48 @@ uploadPictureRoute.post(multipartMiddleware, function (req, res) {
         });
     });
 });
+function setBlockCompletion(_blockId, status) {
+    Block.findByIdAndUpdate(
+        _blockId,
+        { 'isCompleted': status },
+        { safe: true, upsert: true },
+        function (err, model) {
+            if (err)
+                console.log(err);
+            else {
+                console.log(model);
+            }
+        });
+}
+function updateBlockStatusIsCompleted(_blockId) {
+    var count = 0;
+    ResponseMessage.find({ _blockId: _blockId }
+        , function (err, responseMessage) {
+            if (err)
+                res.send(err);
+            else {
+                if (responseMessage.length != 0) {
+                    for (var i = 0; i < responseMessage.length; i++) {
+                        if (responseMessage[i].isCompleted == true) {
+                            count = count + 1;
+                        }
+                        else {
+                            setBlockCompletion(responseMessage[i]._blockId, false);
+                            break;
+                        }
+                    }
+                    if(responseMessage.length == count){
+                        setBlockCompletion(_blockId, true);
+                    }
+                }
+
+                else {
+                    setBlockCompletion(_blockId, true);
+                }
+            }
+        });
+}
+
 updatePasswordRoute.get(function (req, res) {
     var email = req.params.email;
     var pass = new Pass();
