@@ -19,6 +19,7 @@ var getAllBlockRoute = router.route('/getAllBlocks');
 var getResponseMessagesOfBlockRoute = router.route('/getResponseMessagesOfBlock/:blockId');
 var deleteBlockRoute = router.route('/deleteBlock/:blockId');
 var updateBlockNameRoute = router.route('/updateBlockName/:blockId/:blockName');
+var sortBlockRoute = router.route('/sortBlock');
 var utility = new UrlUtility(
     {
     });
@@ -32,39 +33,239 @@ mongoose.connect(url, function (err, db) {
         console.log("Successfully Connected");
     }
 });
-updateBlockNameRoute.get(function (req, res) {
+sortBlockRoute.post(function (req, res) {
     var response = new Response();
-    var _blockId = req.params.blockId;
-    var blockName = req.params.blockName;
-    Block.findOne({ _id: req.params.blockId })
+    var _blockId = req.body.blockId;
+    var groupId = req.body.groupId;
+    var newIndex = req.body.newIndex;
+    var oldIndex = req.body.oldIndex;
+    var count = 0;
+    var prevGroupId;
+    var prevOrder = 0;
+    var type;
+    _blockId = _blockId.slice(5, _blockId.length);
+    Block.findOne({ _id: _blockId })
         .exec(function (err, block) {
             if (err)
                 res.send(err);
             else {
-                 block.name = blockName;
-                    block.markModified('anything');
-                    block.save(function (err) {
-                        response.message = "Success";
-                        response.code = 200;
-                        response.data = block;
-                        res.json(response);
-                    });
+                prevGroupId = block._groupId;
+                prevOrder = block.order;
+                block._groupId = groupId;
+                block.order = newIndex;
+                block.save(function (err) {
+                    Block.find({ '_groupId': block._groupId }, null, { sort: { 'order': 'ascending' } }, function (err, blocks) {
+                        if (err) {
+                            res.send(err);
+                        }
+                        else {
+                            for (var i = 0; i < blocks.length; i++) {
+                                if (blocks[i].order == (i + 1)) {
+                                    count = count + 1;
+                                }
+                                else {
+                                    if (blocks.length != 0) {
+                                        if (newIndex < oldIndex) {
+                                            for (var i = 0; i < blocks.length; i++) {
+                                                if (newIndex < blocks[i].order && oldIndex >= blocks[i].order) {
+                                                    blocks[i].order = blocks[i].order + 1;
+                                                    blocks[i].save(function (err) {
+                                                        count = count + 1;
+                                                        if (blocks.length == count) {
+                                                            response.message = "Success";
+                                                            response.code = 200;
+                                                            res.json(response);
+                                                        }
+                                                    });
+                                                }
+                                                else if (blocks[i].order == newIndex && blocks[i]._id != _blockId) {
+                                                    blocks[i].order = blocks[i].order + 1;
+                                                    blocks[i].save(function (err) {
+                                                        count = count + 1;
+                                                        if (blocks.length == count) {
+                                                            response.message = "Success";
+                                                            response.code = 200;
+                                                            res.json(response);
+                                                        }
+                                                    });
+                                                }
+                                                else {
+                                                    count = count + 1;
+                                                    if (blocks.length == count) {
+                                                        response.message = "Success";
+                                                        response.code = 200;
+                                                        res.json(response);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else {
+                                            for (var i = 0; i < blocks.length; i++) {
+                                                if (oldIndex <= blocks[i].order && newIndex > blocks[i].order) {
+                                                    blocks[i].order = blocks[i].order - 1;
+                                                    blocks[i].save(function (err) {
+                                                        count = count + 1;
+                                                        if (blocks.length == count) {
+                                                            response.message = "Success";
+                                                            response.code = 200;
+                                                            res.json(response);
+                                                        }
+                                                    });
+                                                }
+                                                else if (blocks[i].order == newIndex && blocks[i]._id != _blockId) {
+                                                    blocks[i].order = blocks[i].order - 1;
+                                                    blocks[i].save(function (err) {
+                                                        count = count + 1;
+                                                        if (blocks.length == count) {
+                                                            response.message = "Success";
+                                                            response.code = 200;
+                                                            res.json(response);
+                                                        }
+                                                    });
+                                                }
+                                                else {
+                                                    count = count + 1;
+                                                    if (blocks.length == count) {
+                                                        response.message = "Success";
+                                                        response.code = 200;
+                                                        res.json(response);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }).populate('_groupId');
+                    if (groupId != prevGroupId) {
+                        Block.find({ '_groupId': prevGroupId }, null, { sort: { 'order': 'ascending' } }, function (err, blocks) {
+                            if (err) {
+                                res.send(err);
+                            }
+                            else {
+                                if (blocks.length != 0) {
+                                    for (var i = 0; i < blocks.length; i++) {
+                                        console.log(blocks[i].order);
+                                        if ((i + 1) == blocks[i].order) {
+
+                                        }
+                                        else {
+                                            blocks[i].order = blocks[i].order - 1;
+                                            blocks[i].save(function (err) {
+                                                if (err) {
+
+                                                }
+                                                else {
+                                                    count = count + 1;
+                                                    console.log('Updated');
+                                                }
+                                            })
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
             }
         });
 });
-deleteBlockRoute.get(function (req, res) {
+updateBlockNameRoute.get(function (req, res) {
     var response = new Response();
+    var _blockId = req.params.blockId;
+    var blockName = req.params.blockName;
+    var flag = true;
+    Block.find({}, null, { sort: { '_id': -1 } }, function (err, blocks) {
+        if (err) {
+            res.send(err);
+        }
+        else {
+            for (var i = 0; i < blocks.length; i++) {
+                var groupName = blocks[i].name.toLowerCase();
+                if (groupName == blockName.toLowerCase()) {
+                    flag = false;
+                    break;
+                }
+            }
+            if (flag == true) {
+                Block.findOne({ _id: req.params.blockId })
+                    .exec(function (err, block) {
+                        if (err)
+                            res.send(err);
+                        else {
+                            block.name = blockName;
+                            block.markModified('anything');
+                            block.save(function (err) {
+                                response.message = "Success";
+                                response.code = 200;
+                                response.data = block;
+                                res.json(response);
+                            });
+                        }
+                    });
+            }
+            else {
+                response.message = "Failure: Duplicate Block Name";
+                response.code = 300;
+                res.json(response);
+            }
+        }
+    });
+});
+deleteBlockRoute.get(function (req, res) {
+    var count = 0;
+    var response = new Response();
+    var groupId;
+    var type;
     Block.findOne({ _id: req.params.blockId })
         .exec(function (err, block) {
             if (err)
                 res.send(err);
             else {
                 if (block != null) {
+                    groupId = block._groupId;
+                    type = block.type;
                     block.remove();
-                    response.message = "Success";
-                    response.code = 200;
-                    response.data = block;
-                    res.json(response);
+                    Block.find({ 'type': type, '_groupId': groupId }, null, { sort: { 'order': 'ascending' } }, function (err, blocks) {
+                        if (err) {
+                            res.send(err);
+                        }
+                        else {
+                            if (blocks.length != 0) {
+                                for (var i = 0; i < blocks.length; i++) {
+                                    console.log(blocks[i].order);
+                                    if ((i + 1) == blocks[i].order) {
+
+                                    }
+                                    else {
+                                        blocks[i].order = blocks[i].order - 1;
+                                        blocks[i].save(function (err) {
+                                            if (err) {
+
+                                            }
+                                            else {
+                                                count = count + 1;
+                                                console.log('Updated');
+                                            }
+                                        })
+                                    }
+                                    if (i == count) {
+                                        response.message = "Success";
+                                        response.code = 200;
+                                        response.data = block;
+                                        res.json(response);
+                                    }
+                                }
+                            }
+                            else {
+                                response.message = "No Group Exists";
+                                response.code = 400;
+                                response.data = null;
+                                res.json(response);
+                            }
+                        }
+                    });
                 }
                 else {
                     response.message = "No Block Exists";
@@ -111,29 +312,58 @@ postBlockRoute.post(function (req, res) {
     var block = new Block();
     var response = new Response();
     var date = new Date();
-    // Set the beer properties that came from the POST data
-    block.name = req.body.name;
-    block.order = 0;
-    block.description = req.body.description;
-    block.type = req.body.type;
-    block.createdOnUTC = date;
-    block.updatedOnUTC = date;
-    block.isDeleted = false;
-    block.isLocked = false;
-    block.isCompleted = true;
-    block._groupId = req.body._groupId;
-    console.log(block);
-    // Save the beer and check for errors
-    block.save(function (err) {
+    var flag = true;
+    Block.find({}, null, { sort: { '_id': -1 } }, function (err, blocks) {
         if (err) {
             res.send(err);
         }
         else {
-            response.data = block;
-            response.message = "Success";
-            response.code = 200;
-            res.json(response);
-            console.log('done');
+            for (var i = 0; i < blocks.length; i++) {
+                var groupName = blocks[i].name.toLowerCase();
+                if (groupName == req.body.name.toLowerCase()) {
+                    flag = false;
+                    break;
+                }
+            }
+            if (flag == true) {
+                var order = 0;
+                for (var i = 0; i < blocks.length; i++) {
+                    if (blocks[i].type == req.body.type && blocks[i]._groupId == req.body._groupId) {
+                        if (order < blocks[i].order) {
+                            order = blocks[i].order;
+                        }
+                    }
+                }
+                block.name = req.body.name;
+                block.order = order + 1;
+                block.description = req.body.description;
+                block.type = req.body.type;
+                block.createdOnUTC = date;
+                block.updatedOnUTC = date;
+                block.isDeleted = false;
+                block.isLocked = false;
+                block.isCompleted = true;
+                block._groupId = req.body._groupId;
+                console.log(block);
+                // Save the beer and check for errors
+                block.save(function (err) {
+                    if (err) {
+                        res.send(err);
+                    }
+                    else {
+                        response.data = block;
+                        response.message = "Success";
+                        response.code = 200;
+                        res.json(response);
+                        console.log('done');
+                    }
+                });
+            }
+            else {
+                response.message = "Success";
+                response.code = 300;
+                res.json(response);
+            }
         }
     });
 });

@@ -18,6 +18,8 @@ var ResponseMessage = require('./models/ResponseMessages');
 var Directory = require('./models/Directory');
 var events = require('events');
 var EventEmitter = events.EventEmitter;
+var async = require("async");
+var Promise = require('promise');
 //
 var groups = require('./routes/groups');
 var blocks = require('./routes/blocks');
@@ -141,6 +143,8 @@ io.sockets.on('connection', function (socket) {
                                 socket.broadcast.to('Lobby').emit('updatechat', 'SERVER', data.name + ' has connected to this room');
                                 socket.emit('updaterooms', rooms, data.roomName);
                                 socket.emit('conversationId', conversation._id);
+                                data._conversationId = conversation._id;
+                                data._messageFromUserId = data.id;
                                 BotWelcomeMessage(data, date);
                             }
                         });
@@ -181,7 +185,12 @@ io.sockets.on('connection', function (socket) {
     var pendingArray = [];
     var blockIncomingMessage = false;
     var pendingArrayCounter = 0;
-    var queueController = new EventEmitter()
+    var phrases = [];
+    var phraseSearchingController = new EventEmitter();
+    var flowController = new EventEmitter();
+    var responseMessageArray = [];
+    var conversationMessages = new ConversationMessages();
+    var date = new Date();
     socket.on('sendchat', function (incomingData) {//IOS will send {'messageType':'', 'messageText':'', 'messageData':'', '_conversationId':'', '_messageFromUserId':'', messageTimeStamp:''}
         pendingArray.push(incomingData);
         console.log(blockIncomingMessage);
@@ -191,291 +200,194 @@ io.sockets.on('connection', function (socket) {
     });
 
     function SendChat() {
-        var flowController = new EventEmitter();
-        var responseMessageArray = [];
-        var conversationMessages = new ConversationMessages();
-        var date = new Date();
         if (pendingArray.length == 0) {
             return;
         }
         if (blockIncomingMessage == false) {
-            var data = pendingArray[0];
-            blockIncomingMessage = true;
-            responseMessageArray = [];
-            if (data.messageType == 'text') {
-                var UserText = data.messageText;
-                data.messageText = data.messageText.replace(/[^a-zA-Z ]/g, "");
-                data.messageText = data.messageText.toLowerCase();
-                conversationMessages.messageType = data.messageType;
-                conversationMessages.messageText = UserText;
-                conversationMessages._conversationId = data._conversationId;
-                conversationMessages._messageToUserId = "585d029f61a3b603c493454f";
-                conversationMessages._messageFromUserId = data._messageFromUserId;
-                conversationMessages.createdOnUTC = date;
-                conversationMessages.updatedOnUTC = date;
-                conversationMessages.isDeleted = false;
-                conversationMessages.save(function (err) {
-                    if (err) {
+            Phrases.find({}, function (err, phrases2) {
+                if (err) {
+                    var res;
+                    res.send(err);
+                }
+                else {
+                    var data = pendingArray[0];
+                    blockIncomingMessage = true;
+                    responseMessageArray = [];
+                    if (data.messageType == 'text') {
+                        conversationMessages = new ConversationMessages();
+                        var UserText = data.messageText;
+                        data.messageText = data.messageText.replace(/[^a-zA-Z ]/g, "");
+                        data.messageText = data.messageText.toLowerCase();
+                        conversationMessages.messageType = data.messageType;
+                        conversationMessages.messageText = UserText;
+                        conversationMessages._conversationId = data._conversationId;
+                        conversationMessages._messageToUserId = "585d029f61a3b603c493454f";
+                        conversationMessages._messageFromUserId = data._messageFromUserId;
+                        conversationMessages.createdOnUTC = date;
+                        conversationMessages.updatedOnUTC = date;
+                        conversationMessages.isDeleted = false;
+                        conversationMessages.save(function (err) {
+                            if (err) {
+
+                            }
+                            else {
+                                var returnMessage = {
+                                    'messageText': UserText,
+                                    'messageTimeStamp': data.messageTimeStamp,
+                                    'name': data.name,
+                                    'conversationMessageId': conversationMessages._id
+                                }
+                                io.sockets["in"](socket.room).emit('UserMessage', returnMessage);
+                                setTimeout(function () {
+                                    io.sockets["in"](socket.room).emit('typingstart', 'April App');
+                                    var iSize = data.messageText.split(' ').length;
+                                    var bKeyFound = 0;
+                                    var buffer = "";
+                                    for (i = 0, j = iSize; i < iSize && j >= 1; ++i, --j) {
+                                        for (k = 0; (k + j) <= iSize; ++k) {
+                                            buffer = get_sub_phrase(data.messageText, k, k + j);
+                                            phrases = phrases2.filter(x => x.phraseText === buffer);
+                                            if (phrases.length != 0) {
+                                                bKeyFound = 1;
+                                                break;
+                                            }
+                                        }
+                                        if (bKeyFound == 1) {
+                                            break;
+                                        }
+                                    }
+                                    processPhrases(data);
+                                }, delay);
+                            }
+                        });
 
                     }
                     else {
-                        var returnMessage = {
-                            'messageText': UserText,
-                            'messageTimeStamp': data.messageTimeStamp,
-                            'name': data.name,
-                            'conversationMessageId': conversationMessages._id
-                        }
-                        io.sockets["in"](socket.room).emit('UserMessage', returnMessage);
-                        setTimeout(function () {
-                            io.sockets["in"](socket.room).emit('typingstart', 'April App');
-                            //$regex: ".*" + data.messageText + ".*" 
-                            Phrases.find({ phraseText: { $regex: ".*" + data.messageText + ".*" } }, function (err, phrases) {
-                                if (err) {
-                                    var res;
-                                    res.send(err);
+                        var UserText = data.messageText;
+                        conversationMessages.messageType = 'text';
+                        conversationMessages.messageText = UserText;
+                        conversationMessages._conversationId = data._conversationId;
+                        conversationMessages._messageToUserId = "585d029f61a3b603c493454f";
+                        conversationMessages._messageFromUserId = data._messageFromUserId;
+                        conversationMessages.createdOnUTC = date;
+                        conversationMessages.updatedOnUTC = date;
+                        conversationMessages.isDeleted = false;
+                        conversationMessages.save(function (err) {
+                            if (err) {
+
+                            }
+                            else {
+                                var returnMessage = {
+                                    'messageText': UserText,
+                                    'messageTimeStamp': data.messageTimeStamp,
+                                    'name': data.name,
+                                    'conversationMessageId': conversationMessages._id
                                 }
-                                else {
-                                    if (phrases.length != 0 && data.messageText != "") {//check for no phrase
-                                        if (phrases[0]._phraseGroupId != null) {//check for no phrase Group associated with phrase
-                                            if (phrases[0]._phraseGroupId.phraseGroupType == 'block') {//Check for Type Block
-                                                var phraseGroupObj = phrases[0]._phraseGroupId;
-                                                var counter = 0;
-                                                flowController.on('multipleblockdoWork', function (b) {//loop for MultipleBlocks
-                                                    console.log(b);
-                                                    if (b >= phraseGroupObj._blockId.length) {
-                                                        flowController.emit('blockfinished');
-                                                        return;
-                                                    }
-                                                    var _blockIdArrayValue = phraseGroupObj._blockId[b];
-                                                    ResponseMessage.find({ _blockId: _blockIdArrayValue._blockId }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
-                                                        if (err) {
-                                                            res.send(err);
-                                                        }
-                                                        else {
-                                                            if (responseMessages.length != 0) {
-                                                                //counter = counter + 1;
-                                                                responseMessages.sort(function (a, b) {
-                                                                    return a.order - b.order;
-                                                                });
-                                                                var obj = {
-                                                                    'conversationMessageId': '',
-                                                                    'id': '',
-                                                                    'type': '',
-                                                                    'data': Object
-                                                                }
+                                io.sockets["in"](socket.room).emit('UserMessage', returnMessage);
+                                setTimeout(function () {
+                                    io.sockets["in"](socket.room).emit('typingstart', 'April App');
 
-                                                                for (var i = 0; i < responseMessages.length; i++) {
-                                                                    if (responseMessages[i].isCompleted == true) {
-                                                                        obj = {
-                                                                            'conversationMessageId': '',
-                                                                            'id': '',
-                                                                            'type': '',
-                                                                            'data': Object
-                                                                        }
-                                                                        obj.id = responseMessages[i]._id;
-                                                                        obj.type = responseMessages[i].type;
-                                                                        if (responseMessages[i].type == 'quickreply') {
-                                                                            obj.data = responseMessages[i].data;
-                                                                            //BotSendingMessage(obj, data, date, -1);
-                                                                            //break;
-                                                                        }
-                                                                        if (responseMessages[i].type == 'singletext') {
-                                                                            singletextType = {
-                                                                                'cardAddButton': responseMessages[i].data.cardAddButton,
-                                                                                'quickReplyButton': responseMessages[i].data.quickReplyButton,
-                                                                                'text': responseMessages[i].data.text
-                                                                            }
-                                                                            obj.type = 'text';
-                                                                            obj.data = singletextType;
-                                                                        }
-                                                                        if (responseMessages[i].type == 'text') {
-                                                                            responseMessages[i].data.randomText.shift();
-                                                                            var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
-                                                                            textType = {
-                                                                                'cardAddButton': responseMessages[i].data.cardAddButton,
-                                                                                'quickReplyButton': responseMessages[i].data.quickReplyButton,
-                                                                                'text': responseMessages[i].data.randomText[randomNumber].text
-                                                                            }
-                                                                            obj.data = textType;
-                                                                        }
-                                                                        else {
-                                                                            obj.data = responseMessages[i].data;
-                                                                        }
-                                                                        responseMessageArray.push(obj);
-                                                                    }
-
-                                                                }
-                                                                flowController.emit('multipleblockdoWork', b + 1);
-
-                                                            }
-
-                                                            /*if (phraseGroupObj._blockId.length == counter) {
-                                                                BotSendingMessageArray(responseMessageArray, data);
-                                                            }*/
-                                                        }
-
-                                                    });
-                                                });
-                                                
-                                                //Start of EventEmitter
-                                                flowController.emit('multipleblockdoWork', 0);
-                                                flowController.on('blockfinished', function () {
-                                                    BotSendingMessageArray(responseMessageArray, data);
-                                                    console.log('Multiple Block finished');
-                                                });
-
-                                            }
-                                            else {
-                                                if (phrases[0]._phraseGroupId.textArray.length != 0) {
-                                                    var randomNumber = Math.floor(Math.random() * phrases[0]._phraseGroupId.textArray.length);
-                                                    var obj = {
-                                                        'conversationMessageId': '',
-                                                        'id': '',
-                                                        'type': '',
-                                                        'data': Object
-                                                    }
-                                                    obj.type = 'text';
-                                                    phraseGroupText = {
-                                                        'cardAddButton': [],
-                                                        'quickReplyButton': [],
-                                                        'text': phrases[0]._phraseGroupId.textArray[randomNumber]
-                                                    }//Bogus Logic
-                                                    obj.id = phrases[0]._phraseGroupId._id;
-                                                    obj.data = phraseGroupText;
-                                                    responseMessageArray.push(obj);
-                                                    BotSendingMessageArray(responseMessageArray, data);
-                                                }
-                                                else {
-                                                    io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                                    BotDefaultReply(data, date);
-                                                }
-                                            }
+                                    ResponseMessage.find({ _blockId: data.messageData }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
+                                        if (err) {
+                                            res.send(err);
                                         }
                                         else {
-                                            io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                            BotDefaultReply(data, date);
-                                        }
-                                    }
-                                    else {
-                                        io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                        BotDefaultReply(data, date);
-                                    }
-                                }
-                            }).populate('_phraseGroupId');
-                        }, delay);
-                    }
-                });
-
-            }
-            else {
-                var UserText = data.messageText;
-                conversationMessages.messageType = 'text';
-                conversationMessages.messageText = UserText;
-                conversationMessages._conversationId = data._conversationId;
-                conversationMessages._messageToUserId = "585d029f61a3b603c493454f";
-                conversationMessages._messageFromUserId = data._messageFromUserId;
-                conversationMessages.createdOnUTC = date;
-                conversationMessages.updatedOnUTC = date;
-                conversationMessages.isDeleted = false;
-                conversationMessages.save(function (err) {
-                    if (err) {
-
-                    }
-                    else {
-                        var returnMessage = {
-                            'messageText': UserText,
-                            'messageTimeStamp': data.messageTimeStamp,
-                            'name': data.name,
-                            'conversationMessageId': conversationMessages._id
-                        }
-                        io.sockets["in"](socket.room).emit('UserMessage', returnMessage);
-                        setTimeout(function () {
-                            io.sockets["in"](socket.room).emit('typingstart', 'April App');
-
-                            ResponseMessage.find({ _blockId: data.messageData }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
-                                if (err) {
-                                    res.send(err);
-                                }
-                                else {
-                                    if (responseMessages.length != 0) {
-                                        //counter = counter + 1;
-                                        responseMessages.sort(function (a, b) {
-                                            return a.order - b.order;
-                                        });
-                                        var obj = {
-                                            'conversationMessageId': '',
-                                            'id': '',
-                                            'type': '',
-                                            'data': Object
-                                        }
-
-                                        for (var i = 0; i < responseMessages.length; i++) {
-                                            if (responseMessages[i].isCompleted == true) {
-                                                obj = {
+                                            if (responseMessages.length != 0) {
+                                                //counter = counter + 1;
+                                                responseMessages.sort(function (a, b) {
+                                                    return a.order - b.order;
+                                                });
+                                                var obj = {
                                                     'conversationMessageId': '',
                                                     'id': '',
                                                     'type': '',
                                                     'data': Object
                                                 }
-                                                obj.id = responseMessages[i]._id;
-                                                obj.type = responseMessages[i].type;
-                                                if (responseMessages[i].type == 'quickreply') {
-                                                    obj.data = responseMessages[i].data;
-                                                    //BotSendingMessage(obj, data, date, -1);
-                                                    //break;
-                                                }
-                                                if (responseMessages[i].type == 'singletext') {
-                                                    singletextType = {
-                                                        'cardAddButton': responseMessages[i].data.cardAddButton,
-                                                        'quickReplyButton': responseMessages[i].data.quickReplyButton,
-                                                        'text': responseMessages[i].data.text
+
+                                                for (var i = 0; i < responseMessages.length; i++) {
+                                                    if (responseMessages[i].isCompleted == true) {
+                                                        obj = {
+                                                            'conversationMessageId': '',
+                                                            'id': '',
+                                                            'type': '',
+                                                            'data': Object
+                                                        }
+                                                        obj.id = responseMessages[i]._id;
+                                                        obj.type = responseMessages[i].type;
+                                                        if (responseMessages[i].type == 'quickreply') {
+                                                            obj.data = responseMessages[i].data;
+                                                            //BotSendingMessage(obj, data, date, -1);
+                                                            //break;
+                                                        }
+                                                        if (responseMessages[i].type == 'singletext') {
+                                                            singletextType = {
+                                                                'cardAddButton': responseMessages[i].data.cardAddButton,
+                                                                'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                                                'text': responseMessages[i].data.text
+                                                            }
+                                                            obj.type = 'text';
+                                                            obj.data = singletextType;
+                                                        }
+                                                        if (responseMessages[i].type == 'text') {
+                                                            responseMessages[i].data.randomText.shift();
+                                                            var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                                                            textType = {
+                                                                'cardAddButton': responseMessages[i].data.cardAddButton,
+                                                                'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                                                'text': responseMessages[i].data.randomText[randomNumber].text
+                                                            }
+                                                            obj.data = textType;
+                                                        }
+                                                        else {
+                                                            obj.data = responseMessages[i].data;
+                                                        }
+                                                        responseMessageArray.push(obj);
                                                     }
-                                                    obj.type = 'text';
-                                                    obj.data = singletextType;
                                                 }
-                                                if (responseMessages[i].type == 'text') {
-                                                    responseMessages[i].data.randomText.shift();
-                                                    var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
-                                                    textType = {
-                                                        'cardAddButton': responseMessages[i].data.cardAddButton,
-                                                        'quickReplyButton': responseMessages[i].data.quickReplyButton,
-                                                        'text': responseMessages[i].data.randomText[randomNumber].text
-                                                    }
-                                                    obj.data = textType;
-                                                }
-                                                else {
-                                                    obj.data = responseMessages[i].data;
-                                                }
-                                                responseMessageArray.push(obj);
+                                                BotSendingMessageArray(responseMessageArray, data)
+                                                //flowController.emit('multipleblockdoWork', b + 1);
+
                                             }
+                                            else {
+                                                io.sockets["in"](socket.room).emit('typingend', 'April App');
+                                                BotDefaultReply(data, date);
+                                            }
+                                            /*if (phraseGroupObj._blockId.length == counter) {
+                                                BotSendingMessageArray(responseMessageArray, data);
+                                            }*/
                                         }
-                                        BotSendingMessageArray(responseMessageArray, data)
-                                        //flowController.emit('multipleblockdoWork', b + 1);
 
-                                    }
-                                    else{
-                                         io.sockets["in"](socket.room).emit('typingend', 'April App');
-                                            BotDefaultReply(data, date);
-                                    }
-                                    /*if (phraseGroupObj._blockId.length == counter) {
-                                        BotSendingMessageArray(responseMessageArray, data);
-                                    }*/
-                                }
-
-                            });
-                        }, delay);
+                                    });
+                                }, delay);
+                            }
+                        });
                     }
-                });
-            }
+                }
+            }).populate('_phraseGroupId');
         }
-        else {
-            queueController.emit('pendingArrayfinished');
-            return;
-            console.log("pending");
-        }
+
     }
 
-
+    socket.on('switchRoom', function (newroom) {
+        var oldroom;
+        oldroom = socket.room;
+        socket.leave(socket.room);
+        socket.join(newroom);
+        socket.emit('updatechat', 'SERVER', 'you have connected to ' + newroom);
+        socket.broadcast.to(oldroom).emit('updatechat', 'SERVER', socket.username + ' has left this room');
+        socket.room = newroom;
+        socket.broadcast.to(newroom).emit('updatechat', 'SERVER', socket.username + ' has joined this room');
+        socket.emit('updaterooms', rooms, newroom);
+    });
+    socket.on('mnb', function () {
+        console.log("Pong received from client");
+    });
+    socket.on('disconnect', function () {
+        delete usernames[socket.username];
+        io.sockets.emit('updateusers', usernames);
+        socket.broadcast.emit('updatechat', 'SERVER', socket.username + ' has disconnected');
+        socket.leave(socket.room);
+    });
     function BotSendingMessageArray(objArray, data) {
 
         var arrayController = new EventEmitter();
@@ -506,10 +418,10 @@ io.sockets.on('connection', function (socket) {
                 }
                 else {
                     setTimeout(function () {
-                    io.sockets["in"](socket.room).emit('typingend', 'April App');
-                    objArray[i].conversationMessageId = conversationMessages2._id;
-                    io.sockets["in"](socket.room).emit('updatechat', 'April App', objArray[i]);
-                    arrayController.emit('arraydoWork', i + 1);
+                        io.sockets["in"](socket.room).emit('typingend', 'April App');
+                        objArray[i].conversationMessageId = conversationMessages2._id;
+                        io.sockets["in"](socket.room).emit('updatechat', 'April App', objArray[i]);
+                        arrayController.emit('arraydoWork', i + 1);
                     }, 1000);
                 }
             });
@@ -521,33 +433,166 @@ io.sockets.on('connection', function (socket) {
             pendingArray.shift();
             console.log("Array finished");
             SendChat();
-            //queueController.emit('pendingArrayFlow', 0);
         });
 
     }
+    function processPhrases(data) {
+        if (phrases.length != 0 && data.messageText != "") {//check for no phrase
+            if (phrases[0]._phraseGroupId != null) {//check for no phrase Group associated with phrase
+                if (phrases[0]._phraseGroupId.phraseGroupType == 'block') {//Check for Type Block
+                    var phraseGroupObj = phrases[0]._phraseGroupId;
+                    var counter = 0;
 
-    socket.on('switchRoom', function (newroom) {
-        var oldroom;
-        oldroom = socket.room;
-        socket.leave(socket.room);
-        socket.join(newroom);
-        socket.emit('updatechat', 'SERVER', 'you have connected to ' + newroom);
-        socket.broadcast.to(oldroom).emit('updatechat', 'SERVER', socket.username + ' has left this room');
-        socket.room = newroom;
-        socket.broadcast.to(newroom).emit('updatechat', 'SERVER', socket.username + ' has joined this room');
-        socket.emit('updaterooms', rooms, newroom);
-    });
-    socket.on('mnb', function () {
-        console.log("Pong received from client");
-    });
-    socket.on('disconnect', function () {
-        delete usernames[socket.username];
-        io.sockets.emit('updateusers', usernames);
-        socket.broadcast.emit('updatechat', 'SERVER', socket.username + ' has disconnected');
-        socket.leave(socket.room);
-    });
+                    prepareResponseMessages(0, data, phraseGroupObj._blockId);
+                    
 
+                }
+                else {
+                    if (phrases[0]._phraseGroupId.textArray.length != 0) {
+                        var randomNumber = Math.floor(Math.random() * phrases[0]._phraseGroupId.textArray.length);
+                        var obj = {
+                            'conversationMessageId': '',
+                            'id': '',
+                            'type': '',
+                            'data': Object
+                        }
+                        obj.type = 'text';
+                        phraseGroupText = {
+                            'cardAddButton': [],
+                            'quickReplyButton': [],
+                            'text': phrases[0]._phraseGroupId.textArray[randomNumber]
+                        }//Bogus Logic
+                        obj.id = phrases[0]._phraseGroupId._id;
+                        obj.data = phraseGroupText;
+                        responseMessageArray.push(obj);
+                        BotSendingMessageArray(responseMessageArray, data);
+                    }
+                    else {
+                        io.sockets["in"](socket.room).emit('typingend', 'April App');
+                        BotDefaultReply(data, date);
+                    }
+                }
+            }
+            else {
+                io.sockets["in"](socket.room).emit('typingend', 'April App');
+                BotDefaultReply(data, date);
+            }
+        }
+        else {
+            io.sockets["in"](socket.room).emit('typingend', 'April App');
+            BotDefaultReply(data, date);
+        }
+    }
+    function prepareResponseMessages(k, data, blockArray) {
 
+        if (k >= blockArray.length) {
+            BotSendingMessageArray(responseMessageArray, data);
+            return;
+        }
+        _blockIdArrayValue = blockArray[k];
+        ResponseMessage.find({ _blockId: _blockIdArrayValue._blockId }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
+            if (err) {
+                res.send(err);
+            }
+            else {
+                if (responseMessages.length != 0) {
+                    //counter = counter + 1;
+                    responseMessages.sort(function (a, b) {
+                        return a.order - b.order;
+                    });
+                    var obj = {
+                        'conversationMessageId': '',
+                        'id': '',
+                        'type': '',
+                        'data': Object
+                    }
+
+                    for (var i = 0; i < responseMessages.length; i++) {
+                        if (responseMessages[i].isCompleted == true) {
+                            obj = {
+                                'conversationMessageId': '',
+                                'id': '',
+                                'type': '',
+                                'data': Object
+                            }
+                            obj.id = responseMessages[i]._id;
+                            obj.type = responseMessages[i].type;
+                            if (responseMessages[i].type == 'quickreply') {
+                                obj.data = responseMessages[i].data;
+                                //BotSendingMessage(obj, data, date, -1);
+                                //break;
+                            }
+                            if (responseMessages[i].type == 'singletext') {
+                                singletextType = {
+                                    'cardAddButton': responseMessages[i].data.cardAddButton,
+                                    'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                    'text': responseMessages[i].data.text
+                                }
+                                obj.type = 'text';
+                                obj.data = singletextType;
+                            }
+                            if (responseMessages[i].type == 'text') {
+                                responseMessages[i].data.randomText.shift();
+                                var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                                textType = {
+                                    'cardAddButton': responseMessages[i].data.cardAddButton,
+                                    'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                    'text': responseMessages[i].data.randomText[randomNumber].text
+                                }
+                                obj.data = textType;
+                            }
+                            else {
+                                obj.data = responseMessages[i].data;
+                            }
+                            responseMessageArray.push(obj);
+                        }
+
+                    }
+                    prepareResponseMessages(k + 1, data, blockArray)
+                }
+            }
+
+        });
+    }
+    function checkPhrase(message) {
+        var iSize = message.split(' ').length;
+        Phrases.find({}, function (err, phrases2) {
+            if (err) {
+                var res;
+                res.send(err);
+            }
+            else {
+                var bKeyFound = 0;
+                var buffer = "";
+                for (i = 0, j = iSize; i < iSize && j >= 1; ++i, --j) {
+                    for (k = 0; (k + j) <= iSize; ++k) {
+                        buffer = get_sub_phrase(message, k, k + j);
+                        phrases = phrases2.filter(x => x.phraseText === buffer);
+                        if (phrases.length != 0) {
+                            bKeyFound = 1;
+                            //break;
+                            return;
+                        }
+                    }
+                    if (bKeyFound == 1) {
+                        return;
+                    }
+                }
+                //phraseSearchingController.emit('phraseSearchDoWork', 1);
+            }
+        }).populate("_phraseGroupId");
+    }
+    function get_sub_phrase(message, start, end_pos) {
+        var buffer = "";
+        var messageArray = message.split(' ');
+        for (a = start; a < end_pos; ++a) {
+            buffer += messageArray[a];
+            if (a != end_pos - 1) {
+                buffer += " ";
+            }
+        }
+        return buffer;
+    }
     function BotSendingMessage(obj, data, date, type) {
         date = new Date();
         if (type == -1) {
@@ -668,3 +713,9 @@ function sendHeartbeat() {
 }
 
 setTimeout(sendHeartbeat, 2000);
+
+
+
+
+
+

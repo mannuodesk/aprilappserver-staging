@@ -18,6 +18,7 @@ UtilityFile.prototype.getURL = function () {
    //var url = 'mongodb://aprilapplive:tCACMhi0nxH0gTMeX1ey3nEl67Mzpv9C8Xh5a8BH6A8UmocP0v3wfo5WMcXr1L5XuEeqGnNuCCoshhSVERO0Og==@aprilapplive.documents.azure.com:10250/?ssl=true';
    //var url = 'mongodb://aprilappstaging:r8qNzvEh9TnnovQsNw8Qu8fa7EjkJeKH1x7NKHQfAtDgKw62LezL7WMJ3IS6bkMABEnLZsrpTkzNxvWdUzsv3Q==@aprilappstaging.documents.azure.com:10250/?ssl=true';
    var url = 'mongodb://aprilapp:bro123=H$@ds161028.mlab.com:61028/aprilapp';
+   //var url = 'mongodb://mannuodesk:sajjad1214@ds017736.mlab.com:17736/aprilstaging'
   return url;
 };
 

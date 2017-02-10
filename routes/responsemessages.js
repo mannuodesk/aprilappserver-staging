@@ -5,6 +5,7 @@ var ResponseMessage = require('./../models/ResponseMessages');
 var UrlUtility = require('./../Utility/UrlUtility');
 var Response = require('./../dto/APIResponse');
 var Block = require('./../models/Block');
+var uuid = require('node-uuid');
 
 //GET home page. 
 router.get('/', function (req, res, next) {
@@ -273,7 +274,7 @@ addTextRandomRoute.get(function (req, res) {
     var response = new Response();
     var text = "";
     var obj = {
-        'indexId': count,
+        'indexId': uuid.v4(),
         'text': ''
     };
     ResponseMessage.findByIdAndUpdate(
@@ -320,49 +321,97 @@ sortingOfResponseMessagesRoute.post(function (req, res) {
     var newIndex = req.body.newIndex;
     var response = new Response();
     var groupId = req.body.groupId;
-    ResponseMessage.find({ _id: groupId }, function (err, groups) {
-        if (err) {
-            res.send(err);
-        }
-        else {
-            if (groups.length != 0) {
-                console.log(groups[0]._doc._blockId);
-                ResponseMessage.find({ _blockId: groups[0]._doc._blockId }, function (err, gr) {
-                    if (err) {
-                        res.send(err);
-                    }
-                    else {
-                        var ID = "";
-                        if (gr.length != 0) {
-                            for (var i = 0; i < gr.length; i++) {
-                                if (gr[i].order == newIndex) {
-                                    ID = gr[i]._id;
-                                    break;
+    ResponseMessage.findOne({ _id: groupId })
+        .exec(function (err, responseMessage) {
+            if (err)
+                res.send(err);
+            else {
+                if (responseMessage != null) {
+                    responseMessage.order = newIndex;
+                    responseMessage.save(function (err, responseMessageModel) {
+                        ResponseMessage.find({}, null, { sort: { 'order': 'ascending' } }, function (err, responseMessages) {
+                            if (err) {
+                                res.send(err);
+                            }
+                            else {
+                                var count = 0;
+                                if (responseMessages.length != 0) {
+                                    if (newIndex < oldIndex) {
+                                        for (var i = 0; i < responseMessages.length; i++) {
+                                            if (newIndex < responseMessages[i].order && oldIndex >= responseMessages[i].order) {
+                                                responseMessages[i].order = responseMessages[i].order + 1;
+                                                responseMessages[i].save(function (err) {
+                                                    count = count + 1;
+                                                    if (responseMessages.length == count) {
+                                                        response.message = "Success";
+                                                        response.code = 200;
+                                                        res.json(response);
+                                                    }
+                                                });
+                                            }
+                                            else if (responseMessages[i].order == newIndex && responseMessages[i]._id != groupId) {
+                                                responseMessages[i].order = responseMessages[i].order + 1;
+                                                responseMessages[i].save(function (err) {
+                                                    count = count + 1;
+                                                    if (responseMessages.length == count) {
+                                                        response.message = "Success";
+                                                        response.code = 200;
+                                                        res.json(response);
+                                                    }
+                                                });
+                                            }
+                                            else {
+                                                count = count + 1;
+                                                if (responseMessages.length == count) {
+                                                    response.message = "Success";
+                                                    response.code = 200;
+                                                    res.json(response);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else {
+                                        for (var i = 0; i < responseMessages.length; i++) {
+                                            if (oldIndex <= responseMessages[i].order && newIndex > responseMessages[i].order) {
+                                                responseMessages[i].order = responseMessages[i].order - 1;
+                                                responseMessages[i].save(function (err) {
+                                                    count = count + 1;
+                                                    if (responseMessages.length == count) {
+                                                        response.message = "Success";
+                                                        response.code = 200;
+                                                        res.json(response);
+                                                    }
+                                                });
+                                            }
+                                            else if (responseMessages[i].order == newIndex && responseMessages[i]._id != groupId) {
+                                                responseMessages[i].order = responseMessages[i].order - 1;
+                                                responseMessages[i].save(function (err) {
+                                                    count = count + 1;
+                                                    if (responseMessages.length == count) {
+                                                        response.message = "Success";
+                                                        response.code = 200;
+                                                        res.json(response);
+                                                    }
+                                                });
+                                            }
+                                            else {
+                                                count = count + 1;
+                                                if (responseMessages.length == count) {
+                                                    response.message = "Success";
+                                                    response.code = 200;
+                                                    res.json(response);
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                            ResponseMessage.update({ _id: ID }, { order: oldIndex }, {}, function (err, group) {
-                                if (err) {
-                                    res.send(err);
-                                }
-                                else {
-                                    ResponseMessage.update({ _id: groupId }, { order: newIndex }, {}, function (err, group) {
-                                        if (err) {
-                                            res.json(err);
-                                        }
-                                        else {
-                                            response.message = "Success";
-                                            response.code = 200;
-                                            res.json(response);
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    }
-                });
+                        });
+                    });
+                }
             }
-        }
-    });
+        });
+
 });
 deleteQuickReplyRoute.get(function (req, res) {
     var responseMessageId = req.params.responseMessageId;
