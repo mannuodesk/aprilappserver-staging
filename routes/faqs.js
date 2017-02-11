@@ -17,6 +17,7 @@ var getAllFaqsRoute = router.route('/getAllFaqs');
 var deletFaqsRoute = router.route('/deleteFaqs/:_faqsId');
 var getFaqsContentRoute = router.route('/getFaqsContent/:_faqsId');
 var updateFaqsContentRoute = router.route('/updateFaqsContent');
+var updateFaqsTitleRoute = router.route('/updateFaqsTitle');
 var utility = new UrlUtility(
     {
     });
@@ -29,6 +30,33 @@ mongoose.connect(url, function (err, db) {
     else {
         console.log("Successfully Connected");
     }
+});
+updateFaqsTitleRoute.post(function(req, res){
+    var response = new Response();
+    var faqsId = req.body._faqsId;
+    var title = req.body.title;
+    Faqs.findOne({ _id: faqsId })
+        .exec(function (err, faqs) {
+            if (err)
+                res.send(err);
+            else {
+                if (faqs != null) {
+                    faqs.title = title;
+                    faqs.save(function (err) {
+                        response.data = faqs;
+                        response.message = "Success";
+                        response.code = 200;
+                        res.json(response);
+                    });
+                }
+                else {
+                    response.data = faqs;
+                    response.message = "Failure: Not Found";
+                    response.code = 400;
+                    res.json(response);
+                }
+            }
+        });
 });
 updateFaqsContentRoute.post(function (req, res) {
     var response = new Response();

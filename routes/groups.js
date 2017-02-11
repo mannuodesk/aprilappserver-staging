@@ -292,6 +292,7 @@ deleteOrderByIdRoute.get(function (req, res) {
                 if (group != null) {
                     type = group.type;
                     group.remove();
+                    Block.remove({_groupId: group._id}).exec();//Remove All blocks Related to group
                     Groups.find({ 'type': type }, null, { sort: { 'order': 'ascending' } }, function (err, groups) {
                         if (err) {
                             res.send(err);

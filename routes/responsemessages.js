@@ -15,7 +15,7 @@ router.get('/', function (req, res, next) {
 var postResponseMessageRoute = router.route('/addResponseMessage');
 var getAllResponseMessagesRoute = router.route('/getAllResponseMessages');
 var getAllResponseMessagesOnBlockRoute = router.route('/getAllResponseMessagesOnBlock/:blockId');
-var updateTitleRoute = router.route('/updateTitle/:responseMessageId/:indexId/:type/:titleText');
+var updateTitleRoute = router.route('/updateTitle');
 var updateDescriptionRoute = router.route('/updateDescription/:responseMessageId/:indexId/:descriptionText');
 var updateArticleRoute = router.route('/updateArticle')
 var updateUrlRoute = router.route('/updateUrl');
@@ -206,65 +206,6 @@ updateRandomTitleRoute.post(function (req, res) {
                     }
                     console.log(model.data.randomText);
                 });
-                //responseMessage.data.randomText.set(indexId, text);
-                /*console.log(responseMessage.data.randomText);
-                ResponseMessage.findByIdAndUpdate(
-                    responseMessageId,
-                    { $pull: { 'data.randomText': { indexId: indexId } } },
-                    { safe: true, upsert: true },
-                    function (err, model) {
-                        if (err)
-                            console.log(err);
-                        else {
-                            var obj = {
-                                'indexId': indexId + 1,
-                                'text': titleText
-                            };
-                            ResponseMessage.findByIdAndUpdate(
-                                responseMessageId,
-                                { $push: { "data.randomText": obj } },
-                                { safe: true, upsert: true },
-                                function (err, model) {
-                                    if (err)
-                                        console.log(err);
-                                    else {
-                                        if (titleText != "" && model.data.randomText.length > 0) {
-                                            var flag = false;
-                                            for (var i = 1; i < model.data.randomText.length; i++) {
-                                                if (model.data.randomText[i].text == '') {
-                                                    flag = true;
-                                                }
-                                            }
-                                            if (flag == false) {
-                                                model.isCompleted = true;
-                                                model.save(function (err) {
-                                                    response.message = "Success";
-                                                    response.code = 200;
-                                                    res.json(response);
-                                                });
-                                            }
-                                            else {
-                                                model.isCompleted = false;
-                                                model.save(function (err) {
-                                                    response.message = "Success";
-                                                    response.code = 200;
-                                                    res.json(response);
-                                                });
-                                            }
-                                        }
-                                        else {
-                                            model.isCompleted = false;
-                                            model.save(function (err) {
-                                                response.message = "Success";
-                                                response.code = 200;
-                                                res.json(response);
-                                            });
-                                        }
-                                    }
-                                }
-                            );
-                        }
-                    });*/
             }
         });
 });
@@ -904,11 +845,11 @@ updateArticleRoute.post(function (req, res) {
             }
         });
 });
-updateTitleRoute.get(function (req, res) {
-    var responseMessageId = req.params.responseMessageId;
-    var indexId = req.params.indexId;
-    var type = req.params.type;
-    var titleText = req.params.titleText;
+updateTitleRoute.post(function (req, res) {
+    var responseMessageId = req.body.responseMessageId;
+    var indexId = req.body.indexId;
+    var type = req.body.type;
+    var titleText = req.body.titleText;
     var response = new Response();
     ResponseMessage.findOne({ _id: responseMessageId }
         , function (err, responseMessage) {

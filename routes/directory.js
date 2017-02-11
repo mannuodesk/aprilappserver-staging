@@ -17,6 +17,7 @@ var getAllDirectoryRoute = router.route('/getAllDirectory');
 var deletDirectoryRoute = router.route('/deleteDirectory/:_directoryId');
 var getDirectoryContentRoute = router.route('/getDirectoryContent/:_directoryId');
 var updateDirectoryContentRoute = router.route('/updateDirectoryContent');
+var updateDirectoryTitleRoute = router.route('/updateDirectoryTitle');
 var utility = new UrlUtility(
     {
     });
@@ -30,6 +31,33 @@ mongoose.connect(url, function (err, db) {
         console.log("Successfully Connected");
     }
 });
+updateDirectoryTitleRoute.post(function (req, res) {
+    var response = new Response();
+    var directoryId = req.body._directoryId;
+    var title = req.body.title;
+    Directory.findOne({ _id: directoryId })
+        .exec(function (err, directory) {
+            if (err)
+                res.send(err);
+            else {
+                if (directory != null) {
+                    directory.title = title;
+                    directory.save(function (err) {
+                        response.data = directory;
+                        response.message = "Success";
+                        response.code = 200;
+                        res.json(response);
+                    });
+                }
+                else {
+                    response.data = directory;
+                    response.message = "Failure: Not Found";
+                    response.code = 400;
+                    res.json(response);
+                }
+            }
+        });
+});
 updateDirectoryContentRoute.post(function (req, res) {
     var response = new Response();
     var directoryId = req.body._directoryId;
@@ -37,29 +65,30 @@ updateDirectoryContentRoute.post(function (req, res) {
     console.log(content);
     var dire = new Directory();
     Directory.find({
-        '_id': directoryId}, function(err, directory) {
-            if (!directory) {
+        '_id': directoryId
+    }, function (err, directory) {
+        if (!directory) {
 
-            }
-            else {
-                directory[0].content = content;
-                dire = directory[0];
+        }
+        else {
+            directory[0].content = content;
+            dire = directory[0];
 
-                dire.save(function (err) {
-                    if (err) {
-                        res.send(err);
-                    }
-                    else {
-                        response.data = dire;
-                        response.message = "Success";
-                        response.code = 200;
-                        res.json(response);
-                        console.log('done');
-                    }
+            dire.save(function (err) {
+                if (err) {
+                    res.send(err);
+                }
+                else {
+                    response.data = dire;
+                    response.message = "Success";
+                    response.code = 200;
+                    res.json(response);
+                    console.log('done');
+                }
 
-                });
-            }
-        });
+            });
+        }
+    });
 
 });
 getDirectoryContentRoute.get(function (req, res) {
@@ -111,11 +140,19 @@ deletDirectoryRoute.get(function (req, res) {
 });
 getAllDirectoryRoute.get(function (req, res) {
     var response = new Response();
-    Directory.find({}, null, {sort:'title'}, function (err, directories) {
+    Directory.find({}, null, {}, function (err, directories) {
         if (err) {
             res.send(err);
         }
         else {
+            directories.sort(function (a, b) {
+                var nameA = a.title.toLowerCase(), nameB = b.title.toLowerCase();
+                if (nameA < nameB) //sort string ascending
+                    return -1;
+                if (nameA > nameB)
+                    return 1;
+                return 0;
+            });
             response.data = directories;
             response.code = 200;
             response.message = "Success";
