@@ -26,7 +26,7 @@ var addAddButtonRoute = router.route('/addAddButton');
 var addGalleryCardRoute = router.route('/addGalleryCard');
 var addTextRandomRoute = router.route('/addTextRandom/:responseMessageId/:count');
 var deleteGalleryCardRoute = router.route('/deleteGalleryCard/:responseMessageId/:galleryCardId');
-var addQuickReplyRoute = router.route('/addQuickReply/:responseMessageId/:buttonName/:_blockId/:count');
+var addQuickReplyRoute = router.route('/addQuickReply');
 var sortingOfResponseMessagesRoute = router.route('/sortingOfResponseMessages');
 var updateRandomTitleRoute = router.route('/updateRandomTitle');
 var deleteRandomTitleRoute = router.route('/deleteRandomText/:responseMessageId/:indexId');
@@ -530,11 +530,11 @@ deleteResponseMessageRoute.get(function (req, res) {
             }
         });
 })
-addQuickReplyRoute.get(function (req, res) {
-    var responseMessageId = req.params.responseMessageId;
-    var btnName = req.params.buttonName;
-    var blockId = req.params._blockId;
-    var count = req.params.count;
+addQuickReplyRoute.post(function (req, res) {
+    var responseMessageId = req.body.responseMessageId;
+    var btnName = req.body.buttonName;
+    var blockId = req.body._blockId;
+    var count = req.body.count;
     var response = new Response();
     var obj = {
         'buttonname': btnName,
@@ -550,8 +550,6 @@ addQuickReplyRoute.get(function (req, res) {
             if (err)
                 console.log(err);
             else {
-                //if (model.data.quickReplyBtns.length != 0) {
-                console.log(model);
                 model.isCompleted = true;
                 model.save(function (err) {
                     updateBlockStatusIsCompleted(model._blockId);
@@ -559,12 +557,6 @@ addQuickReplyRoute.get(function (req, res) {
                     response.code = 200;
                     res.json(response);
                 });
-                /*}
-                else {
-                    response.message = "Success";
-                    response.code = 200;
-                    res.json(response);
-                }*/
             }
         }
     );

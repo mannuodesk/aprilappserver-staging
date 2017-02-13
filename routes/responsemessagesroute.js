@@ -5,7 +5,7 @@ var ResponseMessage = require('./../models/ResponseMessages');
 var UrlUtility = require('./../Utility/UrlUtility');
 var Response = require('./../dto/APIResponse');
 
-var editQuickReplyRoute = router.route('/editQuickReply/:buttonName/:_blockId/:responseMessageId/:_quickReplyId');
+var editQuickReplyRoute = router.route('/editQuickReply');
 var editTextCardAddBtnRoute = router.route('/editTextCardAddBtn');
 var editGalleryCardAddBtnRoute = router.route('/editGalleryCardAddBtn');
 var utility = new UrlUtility(
@@ -150,11 +150,11 @@ editTextCardAddBtnRoute.post(function (req, res) {
             }
         });
 });
-editQuickReplyRoute.get(function (req, res) {
-    var btnName = req.params.buttonName;
-    var responseMessageId = req.params.responseMessageId;
-    var quickReplyId = req.params._quickReplyId;
-    var _blockId = req.params._blockId;
+editQuickReplyRoute.post(function (req, res) {
+    var btnName = req.body.buttonName;
+    var responseMessageId = req.body.responseMessageId;
+    var quickReplyId = req.body._quickReplyId;
+    var _blockId = req.body._blockId;
     var response = new Response;
     var responseMessageUpdate = new ResponseMessage();
     ResponseMessage.findOne({ _id: responseMessageId }
