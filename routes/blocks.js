@@ -6,6 +6,9 @@ var UrlUtility = require('./../Utility/UrlUtility');
 var Block = require('./../models/Block');
 var Response = require('./../dto/APIResponse');
 var ResponseMessage = require('./../models/ResponseMessages');
+var PhraseGroup = require('./../models/PhraseGroup');
+var events = require('events');
+var EventEmitter = events.EventEmitter;
 
 var fs = require('fs'),
     request = require('request');
@@ -175,6 +178,8 @@ updateBlockNameRoute.get(function (req, res) {
     var response = new Response();
     var _blockId = req.params.blockId;
     var blockName = req.params.blockName;
+    
+    var flowController = new EventEmitter();
     var flag = true;
     Block.find({}, null, { sort: { '_id': -1 } }, function (err, blocks) {
         if (err) {
@@ -197,10 +202,18 @@ updateBlockNameRoute.get(function (req, res) {
                             block.name = blockName;
                             block.markModified('anything');
                             block.save(function (err) {
-                                response.message = "Success";
-                                response.code = 200;
-                                response.data = block;
-                                res.json(response);
+                                PhraseGroup.find({}, function (err, phraseGroup) {
+                                    if (!phraseGroup) {
+
+                                    }
+                                    else {
+                                        UpdateBlockName(0, phraseGroup, _blockId, blockName);
+                                        response.message = "Success";
+                                        response.code = 200;
+                                        response.data = block;
+                                        res.json(response);
+                                    }
+                                });
                             });
                         }
                     });
@@ -213,6 +226,29 @@ updateBlockNameRoute.get(function (req, res) {
         }
     });
 });
+function UpdateBlockName(i, phraseGroup, _blockId, blockName) {
+    var phraseGroupObj = new PhraseGroup();
+    if (i >= phraseGroup.length) {
+        return;
+    }
+    if (phraseGroup[i]._blockId.length == 0) {
+        UpdateBlockName(i + 1, phraseGroup, _blockId, blockName);
+    }
+    var j = 0;
+    for (j = 0; j < phraseGroup[i]._blockId.length; j++) {
+        if (phraseGroup[i]._blockId[j]._blockId == _blockId) {
+            phraseGroupObj = phraseGroup[i];
+            phraseGroupObj._blockId[j].blockName = blockName;
+            phraseGroupObj.markModified('_blockId');
+            phraseGroupObj.save(function (err, model) {
+                
+            });
+        }
+    }
+    if (j == phraseGroup[i]._blockId.length) {
+        UpdateBlockName(i + 1, phraseGroup, _blockId, blockName);
+    }
+}
 deleteBlockRoute.get(function (req, res) {
     var count = 0;
     var response = new Response();
