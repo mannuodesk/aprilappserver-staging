@@ -417,12 +417,14 @@ deleteAddButtonRoute.get(function (req, res) {
                             break;
                         }
                     }
+                    console.log(galleryObj.cardAddButton);
                     for (var j = 0; j < galleryObj.cardAddButton.length; j++) {
                         if (galleryObj.cardAddButton[j]._addButtonId == addButtonId) {
-                            galleryObj.cardAddButton.splice(j);
+                            console.log('slicing');
+                            galleryObj.cardAddButton.splice(j, 1);
                         }
                     }
-                    console.log(galleryObj);
+                    console.log(galleryObj.cardAddButton);
                     ResponseMessage.findByIdAndUpdate(
                         responseMessage._id,
                         { $pull: { 'data': { indexId: responseMessageId } } },
