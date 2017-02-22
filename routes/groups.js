@@ -73,7 +73,7 @@ updateGroupNameRoute.get(function (req, res) {
                         }
                     });
             }
-            else{
+            else {
                 response.message = "Failure: Duplicate Group Name";
                 response.code = 300;
                 res.json(response);
@@ -170,6 +170,7 @@ getGroupsBlocksRoute2.get(function (req, res) {
     var response = new Response();
     var type = req.params.type;
     // Save the beer and check for errors
+    var flowController = new EventEmitter();
     var groupsArray = [];
     var array = [];
     var groupsBlockDto = {
@@ -187,43 +188,35 @@ getGroupsBlocksRoute2.get(function (req, res) {
                     'group': Groups,
                     'blocks': []
                 };
-                for (var i = 0; i < groups.length; i++) {
+                flowController.on('doWork', function (i) {
+                    if (i >= groups.length) {
+                        flowController.emit('finished');
+                        return;
+                    }
                     groupsBlockDto = {
                         'group': Groups,
                         'blocks': []
                     };
-                    groupsBlockDto.group = groups[i];
-                    var groupId = groups[i]._id;
-                    console.log(groupId)
-                    var counter = 0;
-                    array.push(groupsBlockDto);
-                    Block.find({ _groupId: groupId }, null, { sort: { 'order': 'ascending' } }, function (err, blocks) {
+                    Block.find({ _groupId: groups[i]._id }, null, { sort: { 'order': 'ascending' } }, function (err, blocks) {
                         if (err) {
                             res.send(err);
                         }
                         else {
-                            if (blocks.length != 0) {
-                                array[counter].blocks = blocks;
-                            }
-                            else {
-                                array[counter].blocks = [];
-                            }
-                            counter = counter + 1;
-                            if (counter == i) {
-                                response.message = "Success";
-                                response.code = 200;
-                                response.data = array;
-                                res.json(response);
-                            }
+                            groupsBlockDto.group = groups[i];
+                            groupsBlockDto.blocks = blocks;
+                            array.push(groupsBlockDto);
+                            flowController.emit('doWork', i + 1);
                         }
                     });
 
-                }
-                if (groups.length == 0) {
-                    response.message = "Failure";
-                    response.code = 400;
+                });
+                flowController.emit('doWork', 0);
+                flowController.on('finished', function () {
+                    response.message = "Success";
+                    response.code = 200;
+                    response.data = array;
                     res.json(response);
-                }
+                });
             }
         });
     }
@@ -292,7 +285,7 @@ deleteOrderByIdRoute.get(function (req, res) {
                 if (group != null) {
                     type = group.type;
                     group.remove();
-                    Block.remove({_groupId: group._id}).exec();//Remove All blocks Related to group
+                    Block.remove({ _groupId: group._id }).exec();//Remove All blocks Related to group
                     Groups.find({ 'type': type }, null, { sort: { 'order': 'ascending' } }, function (err, groups) {
                         if (err) {
                             res.send(err);

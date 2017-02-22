@@ -102,38 +102,18 @@ uploadPictureRoute.post(multipartMiddleware, function (req, res) {
                                         galleryObj.description = responseMessage.data[i].description;
                                         galleryObj.title = responseMessage.data[i].title;
                                         galleryObj.pictureUrl = responseMessage.data[i].pictureUrl;
+                                        responseMessage.data[i].pictureUrl = fullUrl + "/images/" + imageName;
                                         break;
                                     }
                                 }
                                 console.log(galleryObj);
-                                ResponseMessage.findByIdAndUpdate(
-                                    responseMessageId,
-                                    { $pull: { 'data': { indexId: indexId } } },
-                                    { safe: true, upsert: true },
-                                    function (err, model) {
-                                        if (err)
-                                            console.log(err);
-                                        else {
-                                            galleryObj.pictureUrl = fullUrl + "/images/" + imageName;
-                                            ResponseMessage.findByIdAndUpdate(
-                                                responseMessageId,
-                                                { $push: { "data": galleryObj } },
-                                                { safe: true, upsert: true },
-                                                function (err, model) {
-                                                    if (err)
-                                                        console.log(err);
-                                                    else {
-                                                        console.log(model);
-                                                        response.data = fullUrl + "/images/" + imageName;
-                                                        response.message = "Success";
-                                                        response.code = 200;
-                                                        res.json(response);
-                                                    }
-                                                }
-                                            );
-                                        }
-                                    }
-                                );
+                                responseMessage.markModified('data');
+                                responseMessage.save(function (err) {
+                                    response.data = fullUrl + "/images/" + imageName;
+                                    response.message = "Success";
+                                    response.code = 200;
+                                    res.json(response);
+                                });
                             }
                         }
                     });
@@ -171,7 +151,7 @@ function updateBlockStatusIsCompleted(_blockId) {
                             break;
                         }
                     }
-                    if(responseMessage.length == count){
+                    if (responseMessage.length == count) {
                         setBlockCompletion(_blockId, true);
                     }
                 }

@@ -79,7 +79,7 @@ deleteOneGalleryCardRoute.get(function (req, res) {
                 });
             }
         });
-})
+});
 deleteRandomTitleRoute.get(function (req, res) {
     var responseMessageId = req.params.responseMessageId;
     var indexId = req.params.indexId;
@@ -414,6 +414,12 @@ deleteAddButtonRoute.get(function (req, res) {
                             galleryObj.description = responseMessage.data[i].description;
                             galleryObj.title = responseMessage.data[i].title;
                             galleryObj.pictureUrl = responseMessage.data[i].pictureUrl;
+                            for (var j = 0; j < responseMessage.data[i].cardAddButton.length; j++) {
+                                if (responseMessage.data[i].cardAddButton[j]._addButtonId == addButtonId) {
+                                    console.log('slicing');
+                                    responseMessage.data[i].cardAddButton.splice(j, 1);
+                                }
+                            }
                             break;
                         }
                     }
@@ -425,33 +431,14 @@ deleteAddButtonRoute.get(function (req, res) {
                         }
                     }
                     console.log(galleryObj.cardAddButton);
-                    ResponseMessage.findByIdAndUpdate(
-                        responseMessage._id,
-                        { $pull: { 'data': { indexId: responseMessageId } } },
-                        { safe: true, upsert: true },
-                        function (err, model) {
-                            if (err)
-                                console.log(err);
-                            else {
-                                ResponseMessage.findByIdAndUpdate(
-                                    responseMessage._id,
-                                    { $push: { "data": galleryObj } },
-                                    { safe: true, upsert: true },
-                                    function (err, model) {
-                                        if (err)
-                                            console.log(err);
-                                        else {
-                                            response.message = "Success";
-                                            response.code = 200;
-                                            res.json(response);
-                                        }
-                                    }
-                                );
-                            }
-                        });
+                    responseMessage.markModified('data');
+                    responseMessage.save(function (err) {
+                        response.message = "Success";
+                        response.code = 200;
+                        res.json(response);
+                    });
                 }
             });
-
     }
     else {
         ResponseMessage.findByIdAndUpdate(
@@ -613,37 +600,17 @@ addAddButtonRoute.post(function (req, res) {
                             galleryObj.description = responseMessage.data[i].description;
                             galleryObj.title = responseMessage.data[i].title;
                             galleryObj.pictureUrl = responseMessage.data[i].pictureUrl;
+                            responseMessage.data[i].cardAddButton.push(obj);
+                            console.log(responseMessage.data[i]);
                             break;
                         }
                     }
-                    galleryObj.cardAddButton.push(obj);
-                    console.log(galleryObj);
-                    ResponseMessage.findByIdAndUpdate(
-                        responseMessage._id,
-                        { $pull: { 'data': { indexId: responseMessageId } } },
-                        { safe: true, upsert: true },
-                        function (err, model) {
-                            if (err)
-                                console.log(err);
-                            else {
-                                ResponseMessage.findByIdAndUpdate(
-                                    responseMessage._id,
-                                    { $push: { "data": galleryObj } },
-                                    { safe: true, upsert: true },
-                                    function (err, model) {
-                                        if (err)
-                                            console.log(err);
-                                        else {
-                                            response.message = "Success";
-                                            response.code = 200;
-                                            res.json(response);
-                                        }
-                                    }
-                                );
-                            }
-                        }
-                    );
-
+                    responseMessage.markModified('data');
+                    responseMessage.save(function (err) {
+                        response.message = "Success";
+                        response.code = 200;
+                        res.json(response);
+                    });
                 }
             }
         );
@@ -707,36 +674,18 @@ updateUrlRoute.post(function (req, res) {
                         galleryObj.description = responseMessage.data[i].description;
                         galleryObj.title = responseMessage.data[i].title;
                         galleryObj.pictureUrl = responseMessage.data[i].pictureUrl;
+                        responseMessage.data[i].url = urlText;
                         break;
                     }
                 }
                 galleryObj.url = urlText;
                 console.log(galleryObj);
-                ResponseMessage.findByIdAndUpdate(
-                    responseMessage._id,
-                    { $pull: { 'data': { indexId: indexId } } },
-                    { safe: true, upsert: true },
-                    function (err, model) {
-                        if (err)
-                            console.log(err);
-                        else {
-                            ResponseMessage.findByIdAndUpdate(
-                                responseMessage._id,
-                                { $push: { "data": galleryObj } },
-                                { safe: true, upsert: true },
-                                function (err, model) {
-                                    if (err)
-                                        console.log(err);
-                                    else {
-                                        response.message = "Success";
-                                        response.code = 200;
-                                        res.json(response);
-                                    }
-                                }
-                            );
-                        }
-                    }
-                );
+                responseMessage.markModified('data');
+                responseMessage.save(function (err) {
+                    response.message = "Success";
+                    response.code = 200;
+                    res.json(response);
+                });
             }
         });
 });
@@ -766,36 +715,19 @@ updateDescriptionRoute.get(function (req, res) {
                         galleryObj.description = responseMessage.data[i].description;
                         galleryObj.title = responseMessage.data[i].title;
                         galleryObj.pictureUrl = responseMessage.data[i].pictureUrl;
+                        responseMessage.data[i].description = descriptionText;
+                        console.log(responseMessage.data[i]);
                         break;
                     }
                 }
                 galleryObj.description = descriptionText;
                 console.log(galleryObj);
-                ResponseMessage.findByIdAndUpdate(
-                    responseMessage._id,
-                    { $pull: { 'data': { indexId: indexId } } },
-                    { safe: true, upsert: true },
-                    function (err, model) {
-                        if (err)
-                            console.log(err);
-                        else {
-                            ResponseMessage.findByIdAndUpdate(
-                                responseMessage._id,
-                                { $push: { "data": galleryObj } },
-                                { safe: true, upsert: true },
-                                function (err, model) {
-                                    if (err)
-                                        console.log(err);
-                                    else {
-                                        response.message = "Success";
-                                        response.code = 200;
-                                        res.json(response);
-                                    }
-                                }
-                            );
-                        }
-                    }
-                );
+                responseMessage.markModified('data');
+                responseMessage.save(function (err) {
+                    response.message = "Success";
+                    response.code = 200;
+                    res.json(response);
+                });
             }
         });
 });
@@ -869,6 +801,7 @@ updateTitleRoute.post(function (req, res) {
                             galleryObj.title = responseMessage.data[i].title;
                             galleryObj.pictureUrl = responseMessage.data[i].pictureUrl;
                             responseMessage.data[i].title = titleText;
+                            console.log(responseMessage.data[i]);
                             break;
                         }
                     }
@@ -878,55 +811,35 @@ updateTitleRoute.post(function (req, res) {
                             flag = false;
                         }
                     }
-                    console.log(galleryObj);
-                    ResponseMessage.findByIdAndUpdate(
-                        responseMessage._id,
-                        { $pull: { 'data': { indexId: indexId } } },
-                        { safe: true, upsert: true },
-                        function (err, model) {
-                            if (err)
-                                console.log(err);
-                            else {
-                                ResponseMessage.findByIdAndUpdate(
-                                    responseMessage._id,
-                                    { $push: { "data": galleryObj } },
-                                    { safe: true, upsert: true },
-                                    function (err, model) {
-                                        if (err)
-                                            console.log(err);
-                                        else {
-                                            if (flag == true) {
-                                                ResponseMessage.update({ _id: responseMessageId }, { 'isCompleted': flag }, {}, function (err, user) {
-                                                    if (err) {
-                                                        res.json(err);
-                                                    }
-                                                    else {
-                                                        updateBlockStatusIsCompleted(responseMessage._blockId);
-                                                        response.data = flag;
-                                                        response.message = "Success";
-                                                        response.code = 200;
-                                                        res.json(response);
-                                                    }
-                                                });
-                                            } else {
-                                                ResponseMessage.update({ _id: responseMessageId }, { 'isCompleted': flag }, {}, function (err, user) {
-                                                    if (err) {
-                                                        res.json(err);
-                                                    }
-                                                    else {
-                                                        response.data = flag;
-                                                        response.message = "Success";
-                                                        response.code = 200;
-                                                        res.json(response);
-                                                    }
-                                                });
-                                            }
-                                        }
-                                    }
-                                );
-                            }
+                    responseMessage.markModified('data');
+                    responseMessage.save(function (err) {
+                        if (flag == true) {
+                            ResponseMessage.update({ _id: responseMessageId }, { 'isCompleted': flag }, {}, function (err, user) {
+                                if (err) {
+                                    res.json(err);
+                                }
+                                else {
+                                    updateBlockStatusIsCompleted(responseMessage._blockId);
+                                    response.data = flag;
+                                    response.message = "Success";
+                                    response.code = 200;
+                                    res.json(response);
+                                }
+                            });
+                        } else {
+                            ResponseMessage.update({ _id: responseMessageId }, { 'isCompleted': flag }, {}, function (err, user) {
+                                if (err) {
+                                    res.json(err);
+                                }
+                                else {
+                                    response.data = flag;
+                                    response.message = "Success";
+                                    response.code = 200;
+                                    res.json(response);
+                                }
+                            });
                         }
-                    );
+                    });
                 }
                 else if (type == 'article') {
                     if (titleText != "" && responseMessage.data.articleText != "") {

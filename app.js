@@ -112,9 +112,12 @@ var usernames = {};
 var rooms = [];
 
 io.sockets.on('connection', function (socket) {
+    var checkUserAvailabilityOnSocket = false;
+    var questionBlockData;
     socket.on('adduser', function (data) {// IOS will send { id: 1, name: 'ali', _roomId = '', roomName='' }
         var conversation = new Conversation();
         var date = new Date();
+        questionBlockData = data;
         Conversation.findOne({ _user1Id: data.id, _user2Id: '586e3b264a030317e09feeb9' })
             .exec(function (err, conversationObject) {
                 if (err) {
@@ -135,6 +138,7 @@ io.sockets.on('connection', function (socket) {
 
                             }
                             else {
+                                checkUserAvailabilityOnSocket = true;
                                 socket.username = data.name;
                                 socket.room = data.roomName;
                                 usernames[data.name] = data.name;
@@ -150,6 +154,7 @@ io.sockets.on('connection', function (socket) {
                         });
                     }
                     else {
+                        checkUserAvailabilityOnSocket = true;
                         socket.username = data.name;
                         socket.room = data.roomName;
                         usernames[data.name] = data.name;
@@ -158,6 +163,31 @@ io.sockets.on('connection', function (socket) {
                         socket.broadcast.to('Lobby').emit('updatechat', 'SERVER', data.name + ' has connected to this room');
                         socket.emit('updaterooms', rooms, data.roomName);
                         socket.emit('conversationId', conversationObject._id);
+                        data._conversationId = conversationObject._id;
+                        data._messageFromUserId = data.id;
+                        ConversationMessages.find({ '_conversationId': conversationObject._id }, null, { sort: { 'createdOnUTC': 'descending' } }, function (err, conversationMessages) {
+                            if (err) {
+                                res.send(err);
+                            }
+                            else {
+                                if (conversationMessages.length != 0) {
+                                    var latestConversationObject = conversationMessages[0];
+                                    //var subtractedDate = currentDate - latestConversationObject.createdOnUTC;
+                                    var timeStart = latestConversationObject.createdOnUTC.getTime();
+                                    var timeEnd = new Date().getTime();
+                                    var hourDiff = timeEnd - timeStart; //in ms
+                                    var secDiff = hourDiff / 1000; //in s
+                                    var minDiff = hourDiff / 60 / 1000; //in minutes
+                                    var hDiff = hourDiff / 3600 / 1000; //in hours
+                                    var humanReadable = {};
+                                    humanReadable.hours = Math.floor(hDiff);
+                                    humanReadable.minutes = minDiff - 60 * humanReadable.hours;
+                                    if (humanReadable.hours > 24) {
+                                        BotGreetingsMessage(data, date);
+                                    }
+                                }
+                            }
+                        });
                     }
                 }
             });
@@ -386,6 +416,7 @@ io.sockets.on('connection', function (socket) {
         delete usernames[socket.username];
         io.sockets.emit('updateusers', usernames);
         socket.broadcast.emit('updatechat', 'SERVER', socket.username + ' has disconnected');
+        checkUserAvailabilityOnSocket = false;
         socket.leave(socket.room);
     });
     function BotSendingMessageArray(objArray, data) {
@@ -444,7 +475,7 @@ io.sockets.on('connection', function (socket) {
                     var counter = 0;
 
                     prepareResponseMessages(0, data, phraseGroupObj._blockId);
-                    
+
 
                 }
                 else {
@@ -630,6 +661,9 @@ io.sockets.on('connection', function (socket) {
             }
             else {
                 if (responseMessages.length != 0) {
+                    responseMessages.sort(function (a, b) {
+                        return a.order - b.order;
+                    });
                     //io.sockets["in"](socket.room).emit('typingend', 'April App');
                     var obj = {
                         'id': '',
@@ -673,6 +707,9 @@ io.sockets.on('connection', function (socket) {
             }
             else {
                 if (responseMessages.length != 0) {
+                    responseMessages.sort(function (a, b) {
+                        return a.order - b.order;
+                    });
                     io.sockets["in"](socket.room).emit('typingend', 'April App');
                     var obj = {
                         'id': '',
@@ -701,6 +738,90 @@ io.sockets.on('connection', function (socket) {
                             obj.data = responseMessages[i].data;
                         }
                         BotSendingMessage(obj, data, date);
+                    }
+                }
+            }
+        });
+    }
+    function BotGreetingsMessage(data, date) {
+        date = new Date();
+        ResponseMessage.find({ _blockId: '58ab53d5e48d6a2d34b2ca64' }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
+            if (err) {
+                res.send(err);
+            }
+            else {
+                if (responseMessages.length != 0) {
+                    io.sockets["in"](socket.room).emit('typingend', 'April App');
+                    var obj = {
+                        'id': '',
+                        'type': '',
+                        'data': Object
+                    }
+                    for (var i = 0; i < responseMessages.length; i++) {
+                        obj = {
+                            'id': '',
+                            'type': '',
+                            'data': Object
+                        }
+                        obj.id = responseMessages[i]._id;
+                        obj.type = responseMessages[i].type;
+                        if (responseMessages[i].type == 'text') {
+                            responseMessages[i].data.randomText.shift();
+                            var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                            textType = {
+                                'cardAddButton': responseMessages[i].data.cardAddButton,
+                                'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                'text': responseMessages[i].data.randomText[randomNumber].text
+                            }
+                            obj.data = textType;
+                        }
+                        else {
+                            obj.data = responseMessages[i].data;
+                        }
+                        BotSendingMessage(obj, data, date);
+                    }
+                }
+            }
+        });
+    }
+    function BotQuestionsMessage() {
+        ResponseMessage.find({ _blockId: '586ea566085bbe2f4ca49d8d' }, null, { sort: { '_id': -1 } }, function (err, responseMessages) {
+            if (err) {
+                res.send(err);
+            }
+            else {
+                if (responseMessages.length != 0) {
+                    responseMessages.sort(function (a, b) {
+                        return a.order - b.order;
+                    });
+                    io.sockets["in"](socket.room).emit('typingend', 'April App');
+                    var obj = {
+                        'id': '',
+                        'type': '',
+                        'data': Object
+                    }
+                    for (var i = 0; i < responseMessages.length; i++) {
+                        obj = {
+                            'id': '',
+                            'type': '',
+                            'data': Object
+                        }
+                        obj.id = responseMessages[i]._id;
+                        obj.type = responseMessages[i].type;
+                        if (responseMessages[i].type == 'text') {
+                            responseMessages[i].data.randomText.shift();
+                            var randomNumber = Math.floor(Math.random() * responseMessages[i].data.randomText.length);
+                            textType = {
+                                'cardAddButton': responseMessages[i].data.cardAddButton,
+                                'quickReplyButton': responseMessages[i].data.quickReplyButton,
+                                'text': responseMessages[i].data.randomText[randomNumber].text
+                            }
+                            obj.data = textType;
+                        }
+                        else {
+                            obj.data = responseMessages[i].data;
+                        }
+                        BotSendingMessage(obj, questionBlockData, date);
                     }
                 }
             }
