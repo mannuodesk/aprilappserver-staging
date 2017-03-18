@@ -85,6 +85,7 @@ postPhrasesRoute.post(function (req, res) {
     // Set the beer properties that came from the POST data
     var phrase = req.body.phraseText;
     phrase = phrase.replace(/[^a-zA-Z ]/g, "");
+    phrase = phrase.trim();
     phrases.phraseText = phrase.toLowerCase();
 
     phrases.phrase = req.body.phraseText;

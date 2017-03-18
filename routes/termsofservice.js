@@ -53,6 +53,7 @@ updateTermsOfService.post(function (req, res) {
                 console.log(err);
             else {
                 termsOfService.content = req.body.content;
+                termsOfService.content = "<div style='font-family:open sans'>" + termsOfService.content + "</div>";
                 termsOfService.updatedOnUTC = date;
                 termsOfService.save(function (err) {
                     response.data = termsOfService;

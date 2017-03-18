@@ -23,6 +23,7 @@ var getResponseMessagesOfBlockRoute = router.route('/getResponseMessagesOfBlock/
 var deleteBlockRoute = router.route('/deleteBlock/:blockId');
 var updateBlockNameRoute = router.route('/updateBlockName/:blockId/:blockName');
 var sortBlockRoute = router.route('/sortBlock');
+var getTopicsRoute = router.route('/getTopics');
 var utility = new UrlUtility(
     {
     });
@@ -35,6 +36,20 @@ mongoose.connect(url, function (err, db) {
     else {
         console.log("Successfully Connected");
     }
+});
+getTopicsRoute.get(function (req, res) {
+    var response = new Response();
+    Block.find({'_groupId':'58aea689cba4f621fcd3258a'}, null, { sort: { 'order': 'ascending' } }, function (err, blocks) {
+        if (err) {
+            res.send(err);
+        }
+        else {
+            response.code = 200;
+            response.data = blocks;
+            response.message = "Success";
+            res.json(response);
+        }
+    });
 });
 sortBlockRoute.post(function (req, res) {
     var response = new Response();
@@ -178,7 +193,7 @@ updateBlockNameRoute.get(function (req, res) {
     var response = new Response();
     var _blockId = req.params.blockId;
     var blockName = req.params.blockName;
-    
+
     var flowController = new EventEmitter();
     var flag = true;
     Block.find({}, null, { sort: { '_id': -1 } }, function (err, blocks) {
@@ -241,7 +256,7 @@ function UpdateBlockName(i, phraseGroup, _blockId, blockName) {
             phraseGroupObj._blockId[j].blockName = blockName;
             phraseGroupObj.markModified('_blockId');
             phraseGroupObj.save(function (err, model) {
-                
+
             });
         }
     }

@@ -30,6 +30,7 @@ var usercode = require('./routes/usercode');
 var messages = require('./routes/messages');
 var directory = require('./routes/directory');
 var aboutapril = require('./routes/aboutapril');
+var notification = require('./routes/notification');
 var faqs = require('./routes/faqs');
 var termsofservice = require('./routes/termsofservice');
 var cookieParser = require('cookie-parser');
@@ -84,7 +85,7 @@ app.use('/aboutapril', aboutapril);
 app.use('/termsofservice', termsofservice);
 app.use('/faqs', faqs);
 app.use('/responsemessagesroute', responsemessagesroute);
-
+app.use('/notification', notification);
 
 
 
@@ -244,8 +245,10 @@ io.sockets.on('connection', function (socket) {
                     blockIncomingMessage = true;
                     responseMessageArray = [];
                     if (data.messageType == 'text') {
+                        date = new Date();
                         conversationMessages = new ConversationMessages();
                         var UserText = data.messageText;
+                        data.messageText = data.messageText.trim();
                         data.messageText = data.messageText.replace(/[^a-zA-Z ]/g, "");
                         data.messageText = data.messageText.toLowerCase();
                         conversationMessages.messageType = data.messageType;
@@ -293,6 +296,7 @@ io.sockets.on('connection', function (socket) {
 
                     }
                     else {
+                        date = new Date();
                         var UserText = data.messageText;
                         conversationMessages.messageType = 'text';
                         conversationMessages.messageText = UserText;
@@ -420,19 +424,33 @@ io.sockets.on('connection', function (socket) {
         socket.leave(socket.room);
     });
     function BotSendingMessageArray(objArray, data) {
+        let promise = new Promise(function (resolve, reject) {
+
+        })
+            .then(function (success) {
+
+            })
+            .catch(function (error) {
+
+            });
 
         var arrayController = new EventEmitter();
         arrayController.on('arraydoWork', function (i) {
             date = new Date();
-            if (i >= objArray.length) {
-                arrayController.emit('arrayfinished');
-                return;
-            }
-            if (objArray[i].type == "quickreply") {
-                io.sockets["in"](socket.room).emit('typingend', 'April App');
-                io.sockets["in"](socket.room).emit('updatechat', 'April App', objArray[i]);
-                arrayController.emit('arrayfinished');
-                return;
+            if (i >= objArray.length || objArray[i].type == "quickreply") {
+                if (i < objArray.length && objArray[i].type == "quickreply") {
+                    io.sockets["in"](socket.room).emit('typingend', 'April App');
+                    io.sockets["in"](socket.room).emit('updatechat', 'April App', objArray[i]);
+                    blockIncomingMessage = false;
+                    pendingArray.shift();
+                    console.log("Array finished");
+                    SendChat();
+                    return;
+                }
+                else {
+                    arrayController.emit('arrayfinished');
+                    return;
+                }
             }
             var conversationMessages2 = new ConversationMessages();
             conversationMessages2.messageType = "object";

@@ -62,6 +62,7 @@ updateDirectoryContentRoute.post(function (req, res) {
     var response = new Response();
     var directoryId = req.body._directoryId;
     var content = req.body.content;
+    content = "<div style='font-family:open sans'>" + content + "</div>";
     console.log(content);
     var dire = new Directory();
     Directory.find({
@@ -166,6 +167,7 @@ postDirectoryRoute.post(function (req, res) {
     var date = new Date();
     directory.title = req.body.title;
     directory.content = req.body.content;
+    directory.content = "<div style='font-family:open sans'>" + directory.content + "</div>";
     directory.createdOnUTC = date;
     directory.updatedOnUTC = date;
     directory.isDeleted = false;

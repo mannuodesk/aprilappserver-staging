@@ -6,6 +6,7 @@ var UrlUtility = require('./../Utility/UrlUtility');
 var Response = require('./../dto/APIResponse');
 var PhraseGroup = require('./../models/PhraseGroup');
 var Block = require('./../models/Block');
+var Phrases = require('./../models/Phrases');
 
 var fs = require('fs'),
     request = require('request');
@@ -118,6 +119,7 @@ deletePhraseGroup.get(function (req, res) {
                 console.log(err);
             else {
                 phraseGroup.remove();
+                Phrases.remove({ _phraseGroupId: phraseGroup._id }).exec();
                 response.message = "Success";
                 response.code = 200;
                 res.json(response);

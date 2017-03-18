@@ -6,6 +6,8 @@ var UrlUtility = require('./../Utility/UrlUtility');
 var Response = require('./../dto/APIResponse');
 var Block = require('./../models/Block');
 var uuid = require('node-uuid');
+var events = require('events');
+var EventEmitter = events.EventEmitter;
 
 //GET home page. 
 router.get('/', function (req, res, next) {
@@ -258,6 +260,8 @@ deleteGalleryCardRoute.get(function (req, res) {
     );
 });
 sortingOfResponseMessagesRoute.post(function (req, res) {
+    var flowController = new EventEmitter();
+    var flowController2 = new EventEmitter();
     var oldIndex = req.body.oldIndex;
     var newIndex = req.body.newIndex;
     var response = new Response();
@@ -270,7 +274,7 @@ sortingOfResponseMessagesRoute.post(function (req, res) {
                 if (responseMessage != null) {
                     responseMessage.order = newIndex;
                     responseMessage.save(function (err, responseMessageModel) {
-                        ResponseMessage.find({}, null, { sort: { 'order': 'ascending' } }, function (err, responseMessages) {
+                        ResponseMessage.find({ '_blockId':responseMessageModel._blockId }, null, { sort: { 'order': 'ascending' } }, function (err, responseMessages) {
                             if (err) {
                                 res.send(err);
                             }
@@ -278,72 +282,64 @@ sortingOfResponseMessagesRoute.post(function (req, res) {
                                 var count = 0;
                                 if (responseMessages.length != 0) {
                                     if (newIndex < oldIndex) {
-                                        for (var i = 0; i < responseMessages.length; i++) {
+                                        flowController.on('newIndexOldIndex', function (i) {
+                                            if (i >= responseMessages.length) {
+                                                flowController.emit('finishednewIndexOldIndex');
+                                                return;
+                                            }
                                             if (newIndex < responseMessages[i].order && oldIndex >= responseMessages[i].order) {
                                                 responseMessages[i].order = responseMessages[i].order + 1;
                                                 responseMessages[i].save(function (err) {
-                                                    count = count + 1;
-                                                    if (responseMessages.length == count) {
-                                                        response.message = "Success";
-                                                        response.code = 200;
-                                                        res.json(response);
-                                                    }
+                                                    flowController.emit('newIndexOldIndex', i + 1);
                                                 });
                                             }
                                             else if (responseMessages[i].order == newIndex && responseMessages[i]._id != groupId) {
                                                 responseMessages[i].order = responseMessages[i].order + 1;
                                                 responseMessages[i].save(function (err) {
-                                                    count = count + 1;
-                                                    if (responseMessages.length == count) {
-                                                        response.message = "Success";
-                                                        response.code = 200;
-                                                        res.json(response);
-                                                    }
+                                                    flowController.emit('newIndexOldIndex', i + 1);
                                                 });
                                             }
                                             else {
                                                 count = count + 1;
-                                                if (responseMessages.length == count) {
-                                                    response.message = "Success";
-                                                    response.code = 200;
-                                                    res.json(response);
-                                                }
+                                                flowController.emit('newIndexOldIndex', i + 1);
                                             }
-                                        }
+                                        });
+                                        flowController.emit('newIndexOldIndex', 0);
+                                        flowController.on('finishednewIndexOldIndex', function () {
+                                            response.message = "Success";
+                                            response.code = 200;
+                                            res.json(response);
+                                        });
                                     }
                                     else {
-                                        for (var i = 0; i < responseMessages.length; i++) {
+                                        flowController2.on('oldIndexNewIndex', function (i) {
+                                            if (i >= responseMessages.length) {
+                                                flowController2.emit('finishedoldIndexNewIndex');
+                                                return;
+                                            }
                                             if (oldIndex <= responseMessages[i].order && newIndex > responseMessages[i].order) {
                                                 responseMessages[i].order = responseMessages[i].order - 1;
                                                 responseMessages[i].save(function (err) {
-                                                    count = count + 1;
-                                                    if (responseMessages.length == count) {
-                                                        response.message = "Success";
-                                                        response.code = 200;
-                                                        res.json(response);
-                                                    }
+                                                    flowController2.emit('oldIndexNewIndex', i + 1);
                                                 });
                                             }
                                             else if (responseMessages[i].order == newIndex && responseMessages[i]._id != groupId) {
                                                 responseMessages[i].order = responseMessages[i].order - 1;
                                                 responseMessages[i].save(function (err) {
-                                                    count = count + 1;
-                                                    if (responseMessages.length == count) {
-                                                        response.message = "Success";
-                                                        response.code = 200;
-                                                        res.json(response);
-                                                    }
+                                                    flowController2.emit('oldIndexNewIndex', i + 1);
                                                 });
                                             }
                                             else {
                                                 count = count + 1;
-                                                if (responseMessages.length == count) {
-                                                    response.message = "Success";
-                                                    response.code = 200;
-                                                    res.json(response);
-                                                }
+                                                flowController2.emit('oldIndexNewIndex', i + 1);
                                             }
-                                        }
+                                        });
+                                        flowController2.emit('oldIndexNewIndex', 0);
+                                        flowController2.on('finishedoldIndexNewIndex', function () {
+                                            response.message = "Success";
+                                            response.code = 200;
+                                            res.json(response);
+                                        });
                                     }
                                 }
                             }
@@ -352,7 +348,6 @@ sortingOfResponseMessagesRoute.post(function (req, res) {
                 }
             }
         });
-
 });
 deleteQuickReplyRoute.get(function (req, res) {
     var responseMessageId = req.params.responseMessageId;
@@ -638,6 +633,7 @@ addGalleryCardRoute.post(function (req, res) {
                     }
                     else {
                         updateBlockStatusIsCompleted(model._blockId);
+                        response.object = obj;
                         response.data = false;
                         response.message = "Success";
                         response.code = 200;

@@ -62,6 +62,7 @@ updateFaqsContentRoute.post(function (req, res) {
     var response = new Response();
     var faqsId = req.body._faqsId;
     var content = req.body.content;
+    content = "<div style='font-family:open sans'>" + content + "</div>";
     console.log(content);
     var dire = new Faqs();
     Faqs.find({
@@ -157,6 +158,7 @@ postFaqsRoute.post(function (req, res) {
     var date = new Date();
     faqs.title = req.body.title;
     faqs.content = req.body.content;
+    faqs.content = "<div style='font-family:open sans'>" + faqs.content + "</div>";
     faqs.createdOnUTC = date;
     faqs.updatedOnUTC = date;
     faqs.isDeleted = false;

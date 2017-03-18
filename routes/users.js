@@ -8,6 +8,8 @@ var Response = require('./../dto/APIResponse');
 var UserDto = require('./../dto/UserDto');
 var uuid = require('node-uuid');
 var Pass = require('./../Utility/Pass');
+var events = require('events');
+var EventEmitter = events.EventEmitter;
 
 var fs = require('fs'),
     request = require('request');
@@ -45,7 +47,7 @@ mongoose.connect(url, function (err, db) {
 dashboardGenderStatsRoute.get(function (req, res) {
     var response = new Response();
     var date = new Date();
-    
+    var flowController = new EventEmitter();
     var loopDate = new Date();
     var TotalMaleUsers = 0;
     var TotalFeMaleUsers = 0;
@@ -71,43 +73,62 @@ dashboardGenderStatsRoute.get(function (req, res) {
     var count = 0;
     var ChartDataArray = [];
     var loopCountWhile = 0;
-    while(loopCountWhile < dateArray.length){
-    //for (var i = 0; i < dateArray.length; i++) {
-        var serachDate = new Date(dateArray[i]);
-        User.find({'createdOnUTC':{ $gte: dateArray[i], $lte: dateArray[i+1]} }, null, { }, function (err, users) {
+    flowController.on('doWork', function (i) {
+        if (i >= dateArray.length) {
+            flowController.emit('finished');
+            return;
+        }
+        var fromDate = new Date(dateArray[i + 1]);
+        var toDate = new Date(dateArray[i]);
+        User.find({ 'createdOnUTC': { $gte: dateArray[i + 1], $lte: dateArray[i] } }, null, {}, function (err, users) {
             if (err) {
                 res.send(err);
             }
             else {
+                var serachDate = new Date(dateArray[i]);
                 console.log(serachDate);
-                for(var j = 0; j< users.length; j++){
+                if (users.length != 0) {
                     GenderChartPerDayObj = {
-                        'date': String,
-                        'maleCount': Number,
-                        'femaleCount': Number
+                        'date': Date,
+                        'maleCount': 0,
+                        'femaleCount': 0
                     }
-                    var month = dateArray.getMonth() + 1;
-                    GenderChartPerDayObj = dateArray[i].getFullYear().toString() 
-                    + "-" + month.toString(); + "-" + dateArray[i].getDate();
-                    if(users[j].gender == 'male'){
-                        GenderChartPerDayObj.maleCount = GenderChartPerDayObj .maleCount + 1;
+                    for (var j = 0; j < users.length; j++) {
+
+                        //var month = temp.getMonth() + 1;
+                        GenderChartPerDayObj.date = dateArray[i];
+                        if (users[j].gender == 'male') {
+                            GenderChartPerDayObj.maleCount = GenderChartPerDayObj.maleCount + 1;
+                        }
+                        else if (users[j].gender == 'female') {
+                            GenderChartPerDayObj.femaleCount = GenderChartPerDayObj.femaleCount + 1;
+                        }
+
                     }
-                    else if(users[j].gender == 'female'){
-                        GenderChartPerDayObj.femaleCount = GenderChartPerDayObj .femaleCount + 1;
-                    }
-                    ChartDataArray.push(GenderChartPerDayObj);
                 }
-                count = count + 1;
-                if(loopCountWhile == count)
-                {
-                    response.message = "Success";
-                    response.code = 200;
-                    response.data = ChartDataArray;
-                    res.json(response);
+                else {
+                    GenderChartPerDayObj = {
+                        'date': Date,
+                        'maleCount': 0,
+                        'femaleCount': 0
+                    }
+                    GenderChartPerDayObj.date = dateArray[i];
+                    GenderChartPerDayObj.maleCount = 0;
+                    GenderChartPerDayObj.femaleCount = 0;
+                    //ChartDataArray.push(GenderChartPerDayObj);
                 }
+                ChartDataArray.push(GenderChartPerDayObj);
+                flowController.emit('doWork', i + 1);
             }
         });
-    }
+    });
+    flowController.emit('doWork', 0);
+    flowController.on('finished', function () {
+        response.message = "Success";
+        response.code = 200;
+        response.data = ChartDataArray;
+        res.json(response);
+    });
 });
 dashboardStatsRoute.get(function (req, res) {
     var response = new Response();
@@ -127,14 +148,19 @@ dashboardStatsRoute.get(function (req, res) {
             var TotalTodayLinkedINUsers = 0;
             var EmailUsers = 0;
             var TodayEmailUsers = 0;
+            var MaleUsers = 0;
+            var FemaleUsers = 0;
+            var FemaleUsersPerMonth = 0;
+            var MaleUsersPerMonth = 0;
             var date = new Date();
             var todayDate = date.getDate().toString() + "-" + date.getMonth().toString() + "-" + date.getFullYear().toString();
-
+            var currentMonth = date.getMonth().toString();
             for (var i = 0; i < questions.length; i++) {
                 if (questions[i].channel != "admin") {
                     if (questions[i].isDeleted != true) {
                         TotalUsers = TotalUsers + 1;
                         var userDate = questions[i].createdOnUTC.getDate().toString() + "-" + questions[i].createdOnUTC.getMonth().toString() + "-" + questions[i].createdOnUTC.getFullYear().toString();
+                        var userMonth = questions[i].createdOnUTC.getMonth().toString();
                         if (todayDate == userDate) {
                             TotalTodayUsers = TotalTodayUsers + 1;
                         }
@@ -149,6 +175,18 @@ dashboardStatsRoute.get(function (req, res) {
                         }
                         if (questions[i].channel == "linkedin") {
                             LinkedINUsers = LinkedINUsers + 1;
+                        }
+                        if (questions[i].gender == "male") {
+                            MaleUsers = MaleUsers + 1;
+                        }
+                        if (questions[i].gender == "female") {
+                            FemaleUsers = FemaleUsers + 1;
+                        }
+                        if (questions[i].gender == "male" && currentMonth == userMonth) {
+                            MaleUsersPerMonth = MaleUsersPerMonth + 1;
+                        }
+                        if (questions[i].gender == "female" && currentMonth == userMonth) {
+                            FemaleUsersPerMonth = FemaleUsersPerMonth + 1;
                         }
                         if (questions[i].channel == "facebook" && todayDate == userDate) {
                             TotalTodayFbUsers = TotalTodayFbUsers + 1;
@@ -175,7 +213,11 @@ dashboardStatsRoute.get(function (req, res) {
                 'TotalTodayGoogleUsers': TotalTodayGoogleUsers,
                 'TotalTodayFbUsers': TotalTodayFbUsers,
                 'TodayEmailUsers': TodayEmailUsers,
-                'EmailUsers': EmailUsers
+                'EmailUsers': EmailUsers,
+                'MaleUsers': MaleUsers,
+                'MaleUsersPerMonth': MaleUsersPerMonth,
+                'FemaleUsers': FemaleUsers,
+                'FemaleUsersPerMonth': FemaleUsersPerMonth
             };
             response.message = "Success";
             response.code = 200;

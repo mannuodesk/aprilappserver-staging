@@ -54,6 +54,7 @@ updateAboutApril.post(function (req, res) {
             else {
                 aboutApril.content = req.body.content;
                 aboutApril.updatedOnUTC = date;
+                aboutApril.content = "<div style='font-family:open sans'>" + aboutApril.content + "</div>";
                 aboutApril.save(function (err) {
                     response.data = aboutApril;
                     response.message = "Success";
